@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Polygraph // Real-Time Multimodal Lie Detector</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Google Fonts for futuristic sci-fi typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body class="cyber-theme">
+    <!-- Scanline & CRT flicker overlay -->
+    <div class="crt-overlay"></div>
+    <div class="grid-background"></div>
+
+    <!-- MAIN INTERFACE -->
+    <div class="app-container">
+        <!-- TOP HUD HEADER -->
+        <header class="hud-header">
+            <div class="header-left">
+                <div class="hud-logo-icon">
+                    <span class="pulse-dot"></span>
+                </div>
+                <div>
+                    <h1 class="hud-title">A.I. POLYGRAPH <span class="version-tag">MULTIMODAL v4.5</span></h1>
+                    <p class="hud-subtitle">LIVE SPEECH-TO-TEXT, LINGUISTIC ANALYSIS, rPPG &amp; BIOMETRIC SYSTEM</p>
+                </div>
+            </div>
+
+            <div class="header-indicators">
+                <div class="indicator-pill" id="camera-pill">
+                    <span class="status-dot green"></span> CAM: <span id="cam-status">ACTIVE</span>
+                </div>
+                <button id="switch-cam-btn" class="hud-btn secondary-btn" title="Switch between Camera 0 and Camera 1">
+                    📷 SWITCH CAM (<span id="active-cam-label">CAM 0</span>)
+                </button>
+                <button id="open-case-modal-btn" class="hud-btn secondary-btn" title="Setup Suspect Profile & Crime Case Scenario">
+                    📁 CASE: <span id="hud-case-badge" style="color:var(--neon-amber);">VAULT ROBBERY</span>
+                </button>
+                <button id="calibrate-btn" class="hud-btn secondary-btn" title="Calibrate personal resting baseline">
+                    🎯 CALIBRATE (10s)
+                </button>
+                <button id="ai-brain-btn" class="hud-btn secondary-btn" title="Configure Cognitive AI Brain & Gemini Key">
+                    🧠 AI BRAIN: <span id="ai-engine-badge" style="color:var(--neon-cyan);">COGNITIVE ML</span>
+                </button>
+                <a href="/download_dossier_pdf" target="_blank" class="hud-btn primary-btn pulse-glow" style="text-decoration:none;" title="Download Official Forensic Court Dossier PDF">
+                    📑 EXPORT DOSSIER PDF
+                </a>
+                <a href="/download_pdf" target="_blank" class="hud-btn secondary-btn" style="text-decoration:none;" title="Download PDF Technical Documentation">
+                    📥 ARCHITECTURE
+                </a>
+                <button id="sound-toggle-btn" class="hud-btn secondary-btn" title="Toggle Sound Effects">
+                    🔊 SFX: <span id="sfx-label">ON</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ACTIVE SUSPECT & CRIME DOSSIER BANNER -->
+        <div class="suspect-case-banner">
+            <div class="case-meta-group">
+                <span class="case-classified-tag">CONFIDENTIAL // LAW ENFORCEMENT INTERROGATION</span>
+                <div class="suspect-identity">
+                    <span>SUSPECT: <strong id="banner-suspect-name" class="cyan-text">Vikram Malhotra</strong> (<span id="banner-suspect-meta">32 Yrs, Male</span>)</span>
+                    <span class="hud-divider">|</span>
+                    <span>CASE FILE: <strong id="banner-case-id" class="amber-text">CBI-2026-X89</strong></span>
+                    <span class="hud-divider">|</span>
+                    <span>CRIME: <strong id="banner-crime-category" class="green-text">High-Value Vault &amp; Bank Robbery</strong></span>
+                </div>
+            </div>
+            <div class="case-actions-group">
+                <span class="record-counter">LOGGED: <strong id="banner-records-count">0</strong> RECORDS</span>
+                <button id="quick-edit-case-btn" class="hud-btn secondary-btn" style="padding:5px 12px; font-size:0.75rem;">
+                    ✏️ CONFIGURE CASE / SUSPECT
+                </button>
+            </div>
+        </div>
+
+        <!-- CALIBRATION STATUS BANNER -->
+        <div id="calibration-banner" class="calibration-banner hidden">
+            <div class="cal-content">
+                <span class="cal-spinner">⚡</span>
+                <div>
+                    <strong>PHYSIOLOGICAL BASELINE CALIBRATION IN PROGRESS</strong>
+                    <p>Sit still, breathe normally, and look at the camera. Learning resting heart rate and blink rate...</p>
+                </div>
+            </div>
+            <div class="cal-progress-wrapper">
+                <div class="cal-progress-text"><span id="cal-percent">0</span>%</div>
+                <div class="cal-track">
+                    <div id="cal-fill" class="cal-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="dashboard-grid">
+            <!-- LEFT PANEL: CAMERA & EYE TRACKING -->
+            <section class="hud-panel camera-panel">
+                <div class="panel-header">
+                    <span class="panel-tag">[ CH-01 : HARDWARE BIOMETRIC OPTICAL FEED ]</span>
+                    <span class="fps-tag">rPPG: <span id="rppg-status-tag" class="green-text">PULSE LOCKED</span></span>
+                </div>
+
+                <!-- Live Camera Viewport -->
+                <div class="video-wrapper">
+                    <img id="webcam-stream" src="/video_feed" class="live-stream-img" alt="Hardware Webcam Feed">
+                    <canvas id="face-canvas"></canvas>
+
+                    <!-- Tactical HUD Overlays -->
+                    <div class="target-reticle">
+                        <div class="reticle-corner top-left"></div>
+                        <div class="reticle-corner top-right"></div>
+                        <div class="reticle-corner bottom-left"></div>
+                        <div class="reticle-corner bottom-right"></div>
+                    </div>
+
+                    <div class="hud-badge top-left-badge" id="face-lock-badge">
+                        <span class="beacon"></span> TARGET: <span id="target-status">FACIAL LOCK ACTIVE</span>
+                    </div>
+
+                    <div class="hud-badge top-right-badge" id="gaze-badge">
+                        GAZE: <span id="gaze-direction">DIRECT CONTACT</span>
+                    </div>
+
+                    <!-- Scan laser animation during 5-second interrogation -->
+                    <div id="scan-bar" class="scan-bar"></div>
+                </div>
+
+                <!-- 4 Biometric Metric Cards -->
+                <div class="biometric-metrics-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <!-- Metric 1: Real rPPG Heart Rate -->
+                    <div class="metric-card">
+                        <div class="metric-label">❤️ rPPG HEART RATE</div>
+                        <div class="metric-value crimson-glow">
+                            <span id="bpm-val">72.0</span> <small style="font-size:0.75rem; color:#aaa;">BPM</small>
+                        </div>
+                        <div class="metric-footer" id="bpm-status">
+                            BASE: <span id="base-bpm-val">72.0</span> | Δ: <span id="delta-bpm-val">0.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Metric 2: Eye Contact Stability -->
+                    <div class="metric-card">
+                        <div class="metric-label">EYE CONTACT</div>
+                        <div class="metric-value cyan-glow" id="eye-contact-val">95%</div>
+                        <div class="progress-bar-container">
+                            <div class="progress-fill cyan-fill" id="eye-contact-bar" style="width: 95%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 3: Blink Counter -->
+                    <div class="metric-card">
+                        <div class="metric-label">TOTAL BLINKS</div>
+                        <div class="metric-value" id="blink-count-val">0</div>
+                        <div class="metric-footer">
+                            RATE: <span id="blink-rate-val" class="highlight-val">12</span> BPM
+                        </div>
+                    </div>
+
+                    <!-- Metric 4: Micro-Expressions (FACS) -->
+                    <div class="metric-card">
+                        <div class="metric-label">MICRO-EXPRESSION</div>
+                        <div class="metric-value" style="font-size:1.05rem; color:#00ff66;" id="micro-expr-val">STEADY</div>
+                        <div class="metric-footer" id="brow-tension-status">AU4 BROW: NORMAL</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: AUDIO, LIVE SPEECH, POLYGRAPH & INTERROGATION -->
+            <section class="hud-panel telemetry-panel">
+                <!-- Polygraph Scrolling Real-time Waves -->
+                <div class="polygraph-section">
+                    <div class="panel-header">
+                        <span class="panel-tag">[ CH-02 : MULTI-CHANNEL POLYGRAPH OSCILLOGRAPH ]</span>
+                        <span class="live-blink-tag">LIVE SIGNALS</span>
+                    </div>
+                    <div class="canvas-container">
+                        <canvas id="polygraph-canvas" height="135"></canvas>
+                        <div class="polygraph-legend">
+                            <span class="legend-item"><span class="color-dot red-dot"></span> rPPG CARDIO PULSE</span>
+                            <span class="legend-item"><span class="color-dot cyan-dot"></span> VOICE TENSION</span>
+                            <span class="legend-item"><span class="color-dot yellow-dot"></span> EYE TENSION</span>
+                            <span class="legend-item"><span class="color-dot magenta-dot"></span> DECEPTION INDEX</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Speech Transcription & Linguistic Intelligence Console (NEW FEATURE) -->
+                <div class="speech-analysis-section">
+                    <div class="panel-header">
+                        <span class="panel-tag">[ CH-03 : REAL-TIME SPEECH &amp; LINGUISTIC ANALYZER ]</span>
+                        <div class="speech-controls">
+                            <span id="speech-indicator" class="status-dot green"></span>
+                            <span id="speech-status-label" style="font-family:var(--font-mono); font-size:0.75rem;">LIVE MIC</span>
+                            <select id="speech-lang-select" class="lang-select">
+                                <option value="en-IN" selected>English (India)</option>
+                                <option value="en-US">English (US)</option>
+                                <option value="hi-IN">हिन्दी (Hindi)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="speech-transcript-box">
+                        <div class="speech-transcript-meta">LIVE SPOKEN TRANSCRIPT (बोले गए शब्द):</div>
+                        <p id="live-transcript-text" class="live-transcript-text">"Speak your answer into the microphone... your words will appear here live."</p>
+                        <div style="margin-top: 6px; display: flex; gap: 6px;">
+                            <input id="manual-speech-input" type="text" placeholder="Or type your reply here (e.g. 'Kasam se maine nahi kiya', 'No', 'Yes')..." 
+                                   style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(0,243,255,0.3); border-radius: 4px; padding: 4px 8px; color: #fff; font-family: var(--font-mono); font-size: 0.75rem;">
+                            <button id="set-speech-btn" class="hud-btn secondary-btn" style="padding: 2px 10px; font-size: 0.72rem;">SET</button>
+                        </div>
+                        <div class="linguistic-pills-row" id="linguistic-pills">
+                            <span class="ling-pill steady">LINGUISTIC ANALYSIS READY</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Stress & Voice Frequency Spectrum -->
+                <div class="audio-analysis-section">
+                    <div class="panel-header">
+                        <span class="panel-tag">[ CH-04 : VOCAL TREMOR SPECTRUM ]</span>
+                        <span id="voice-level-label">LEVEL: ACTIVE</span>
+                    </div>
+                    <div class="audio-hud-grid">
+                        <div class="audio-bars-container">
+                            <canvas id="audio-spectrum-canvas" height="50"></canvas>
+                        </div>
+                        <div class="voice-indicators">
+                            <div class="voice-stat">
+                                <span>PITCH STRESS:</span>
+                                <strong id="voice-stress-pct" class="cyan-text">16%</strong>
+                            </div>
+                            <div class="voice-stat">
+                                <span>MICRO-TREMOR:</span>
+                                <strong id="micro-tremor-label" class="green-text">STEADY</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Stress Gauge Meter -->
+                <div class="stress-meter-section">
+                    <div class="stress-meter-header">
+                        <span>SUSPICION / DECEPTION INDEX</span>
+                        <span id="stress-score-text" class="stress-digital">18%</span>
+                    </div>
+                    <div class="stress-meter-track">
+                        <div id="stress-gauge-fill" class="stress-meter-fill" style="width: 18%;"></div>
+                        <div class="threshold-marker" style="left: 48%;" title="Lie Threshold (48%)">
+                            <span class="threshold-label">LIE THRESHOLD (48%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interrogation Control Unit -->
+                <div class="interrogation-unit">
+                    <div class="question-display-box">
+                        <div class="question-meta">
+                            <span>CURRENT INTERROGATION QUESTION</span>
+                            <span id="q-counter">Q 1/10</span>
+                        </div>
+                        <h2 id="question-text" class="question-text">Are you speaking the truth right now?</h2>
+                    </div>
+
+                    <div class="interrogation-actions">
+                        <button id="prev-q-btn" class="action-btn icon-btn" title="Previous Question">◀</button>
+                        <button id="scan-now-btn" class="action-btn scan-trigger-btn">
+                            <span class="btn-glow-pulse"></span>
+                            <span class="btn-icon">⚡</span>
+                            <span class="btn-text">
+                                <strong>START LIE TEST</strong>
+                                <small>5-SECOND BIOMETRIC SCAN [SPACEBAR]</small>
+                            </span>
+                        </button>
+                        <button id="next-q-btn" class="action-btn icon-btn" title="Next Question">▶</button>
+                    </div>
+
+                    <!-- Instant Test Demos for quick verification -->
+                    <div class="demo-buttons-row">
+                        <span class="demo-label">TEST DEMO:</span>
+                        <button id="demo-lie-btn" class="demo-btn red-btn">SIMULATE LIE</button>
+                        <button id="demo-truth-btn" class="demo-btn green-btn">SIMULATE TRUTH</button>
+                    </div>
+
+                    <!-- Countdown Bar during Interrogation Scan -->
+                    <div id="scan-progress-wrapper" class="scan-progress-wrapper hidden">
+                        <div class="scan-status-text">
+                            <span class="blinking-warning">SCANNING... SPEAK CLEARLY &amp; MAINTAIN EYE CONTACT</span>
+                            <span id="countdown-timer">5.0s</span>
+                        </div>
+                        <div class="scan-progress-track">
+                            <div id="scan-progress-bar" class="scan-progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ================================================================= -->
+    <!--  DRAMATIC VERDICT OVERLAY (BIG TRUTH / LIE SCREEN)                -->
+    <!-- ================================================================= -->
+    <div id="verdict-modal" class="verdict-modal hidden">
+        <div class="verdict-backdrop"></div>
+        <div class="verdict-content-box" id="verdict-box">
+            
+            <div class="verdict-top-bar">
+                <span class="classified-tag">POLYGRAPH FORENSIC REPORT // SCIENTIFIC VERDICT</span>
+                <span id="verdict-timestamp">TIME: 00:00:00</span>
+            </div>
+
+            <div class="verdict-stamp-container">
+                <div class="siren-lights" id="siren-lights">
+                    <div class="siren red-siren"></div>
+                    <div class="siren red-siren right"></div>
+                </div>
+
+                <div id="verdict-giant-text" class="giant-verdict-stamp lie-stamp">
+                    LIE DETECTED!
+                </div>
+                <div id="verdict-speech-subtext" class="verdict-speech-subtext red-text">
+                    <span class="voice-wave-icon">🔊</span> <span id="verdict-voice-phrase">"Sorry sir, you are lying."</span>
+                </div>
+                <div id="verdict-confidence-badge" class="verdict-confidence">
+                    DECEPTION PROBABILITY: 85.0%
+                </div>
+            </div>
+
+            <!-- Spoken Statement Evidence Box (NEW) -->
+            <div class="verdict-statement-box">
+                <div class="vs-label">🗣️ ANALYZED SPOKEN STATEMENT (आपके बोले गए शब्द):</div>
+                <p id="bd-spoken-statement" class="vs-text">"I swear I was at home yesterday and didn't touch anything..."</p>
+                <div id="bd-linguistic-status" class="vs-status red-text">LINGUISTIC DECEPTION MARKERS DETECTED</div>
+            </div>
+
+            <!-- AI Cognitive Reasoning Box (The Thinking Brain) -->
+            <div class="verdict-reasoning-box">
+                <div class="vr-header">
+                    <span class="vr-badge" id="bd-ai-engine-badge">🧠 COGNITIVE AI REASONING (सोच और निर्णय)</span>
+                    <span id="bd-ai-confidence" class="vr-conf">CONFIDENCE: 92%</span>
+                </div>
+                <p id="bd-ai-reasoning-text" class="vr-reasoning-text">"Analyzing statement context and psychological indicators..."</p>
+            </div>
+
+            <!-- Detailed Biometric Breakdown Grid -->
+            <div class="verdict-breakdown-grid">
+                <div class="breakdown-card">
+                    <div class="bd-label">❤️ rPPG PULSE DYNAMICS</div>
+                    <div class="bd-value" id="bd-pulse-text">Heart Rate: 72 BPM</div>
+                    <div class="bd-status green-text" id="bd-pulse-status">RESTING BASELINE</div>
+                </div>
+
+                <div class="breakdown-card">
+                    <div class="bd-label">🎯 GAZE &amp; EYE CONTACT</div>
+                    <div class="bd-value" id="bd-gaze-text">Direct Eye Contact (94%)</div>
+                    <div class="bd-status green-text" id="bd-gaze-status">CREDIBLE ALIGNMENT</div>
+                </div>
+
+                <div class="breakdown-card">
+                    <div class="bd-label">🎭 MICRO-EXPRESSIONS</div>
+                    <div class="bd-value" id="bd-micro-text">Steady / Neutral</div>
+                    <div class="bd-status green-text" id="bd-micro-status">NO DECEPTIVE TENSION</div>
+                </div>
+
+                <div class="breakdown-card">
+                    <div class="bd-label">📊 OVERALL DECEPTION SCORE</div>
+                    <div class="bd-value" id="bd-stress-text">22% Suspicion Index</div>
+                    <div class="bd-status green-text" id="bd-stress-status">WITHIN TRUTH THRESHOLD</div>
+                </div>
+            </div>
+
+            <div class="verdict-modal-footer" style="display:flex; gap:12px; justify-content:center;">
+                <button id="dismiss-verdict-btn" class="hud-btn primary-btn">
+                    CONTINUE INTERROGATION [NEXT QUESTION]
+                </button>
+                <a href="/download_dossier_pdf" target="_blank" class="hud-btn secondary-btn" style="text-decoration:none;" title="Download Updated Forensic Dossier PDF">
+                    📑 EXPORT DOSSIER PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!--  CRIMINAL CASE SETUP & SUSPECT PROFILING MODAL                   -->
+    <!-- ================================================================= -->
+    <div id="case-setup-modal" class="verdict-modal hidden">
+        <div class="verdict-backdrop" id="case-modal-backdrop"></div>
+        <div class="verdict-content-box" style="max-width: 680px;">
+            <div class="verdict-top-bar">
+                <span class="classified-tag">📁 CRIMINAL CASE DOSSIER &amp; SUSPECT PROFILING</span>
+                <button id="close-case-modal-btn" class="icon-btn" style="width:28px; height:28px; background:none; border:none; color:#fff; cursor:pointer;">✕</button>
+            </div>
+
+            <div style="font-family: var(--font-body); font-size: 0.9rem; line-height: 1.5; color: #ddd; display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label class="modal-input-label">CASE FILE NUMBER:</label>
+                        <input id="input-case-id" type="text" value="CBI-2026-X89" class="modal-input-field">
+                    </div>
+                    <div>
+                        <label class="modal-input-label">INVESTIGATING OFFICER:</label>
+                        <input id="input-officer-name" type="text" value="Special Agent In-Charge" class="modal-input-field">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label class="modal-input-label">SUSPECT NAME (आरोपी का नाम):</label>
+                        <input id="input-suspect-name" type="text" value="Vikram Malhotra" class="modal-input-field">
+                    </div>
+                    <div>
+                        <label class="modal-input-label">AGE:</label>
+                        <input id="input-suspect-age" type="number" value="32" class="modal-input-field">
+                    </div>
+                    <div>
+                        <label class="modal-input-label">GENDER:</label>
+                        <select id="input-suspect-gender" class="modal-select-field">
+                            <option value="Male" selected>Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="modal-input-label">CRIME INVESTIGATION SCENARIO (अपराध का प्रकार):</label>
+                    <select id="input-crime-scenario" class="modal-select-field" style="font-size: 0.9rem; padding: 8px;">
+                        <option value="vault_heist" selected>🏦 High-Value Vault &amp; Bank Robbery (डकैती / चोरी)</option>
+                        <option value="homicide">🔪 Homicide &amp; Murder Investigation (हत्या काण्ड)</option>
+                        <option value="cyber_fraud">💻 Corporate Cyber Espionage &amp; Embezzlement (डेटा चोरी / कॉर्पोरेट फ्रॉड)</option>
+                        <option value="general">🔍 General Police Interrogation &amp; Integrity Screening</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="modal-input-label">ALLEGATION BRIEF &amp; CRIME DETAILS:</label>
+                    <textarea id="input-crime-details" rows="2" class="modal-textarea-field">Armed or unauthorized breach of commercial bank vault at midnight; transfer of currency and bullion.</textarea>
+                </div>
+
+                <div>
+                    <label class="modal-input-label">CUSTOM INTERROGATION QUESTIONS (OPTIONAL - 1 PER LINE):</label>
+                    <textarea id="input-custom-questions" rows="3" placeholder="Leave empty to auto-load standard expert questions for the selected crime scenario..." class="modal-textarea-field"></textarea>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                <span id="case-setup-status" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--neon-green);">READY</span>
+                <div style="display:flex; gap:10px;">
+                    <button id="cancel-case-btn" class="hud-btn secondary-btn" style="padding: 8px 18px;">
+                        CANCEL
+                    </button>
+                    <button id="save-case-btn" class="hud-btn primary-btn" style="padding: 8px 22px;">
+                        INITIALIZE CASE &amp; LOAD QUESTIONS
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!--  AI BRAIN / COGNITIVE ENGINE CONFIGURATION MODAL                   -->
+    <!-- ================================================================= -->
+    <div id="ai-brain-modal" class="verdict-modal hidden">
+        <div class="verdict-backdrop" id="brain-modal-backdrop"></div>
+        <div class="verdict-content-box" style="max-width: 620px;">
+            <div class="verdict-top-bar">
+                <span class="classified-tag">🧠 COGNITIVE AI REASONING CORE CONFIGURATION</span>
+                <button id="close-brain-modal-btn" class="icon-btn" style="width:28px; height:28px; background:none; border:none; color:#fff; cursor:pointer;">✕</button>
+            </div>
+
+            <div style="font-family: var(--font-body); font-size: 0.95rem; line-height: 1.5; color: #ddd;">
+                <p style="margin-bottom: 12px;">
+                    This system uses a dual-engine architecture:
+                </p>
+                <div style="background: rgba(0, 243, 255, 0.08); border-left: 3px solid var(--neon-cyan); padding: 10px; margin-bottom: 15px; border-radius: 4px;">
+                    <strong style="color:var(--neon-cyan);">MODE A: Google Gemini 2.5 Flash API</strong>
+                    <div style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">Deep psychological reasoning, detects contradictions between statements, evasion, and confessions.</div>
+                </div>
+                <div style="background: rgba(0, 255, 102, 0.08); border-left: 3px solid var(--neon-green); padding: 10px; margin-bottom: 15px; border-radius: 4px;">
+                    <strong style="color:var(--neon-green);">MODE B: Local Cognitive Semantic Engine (Active Offline)</strong>
+                    <div style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">Zero-latency local NLP rules for direct contradictions, emphatic swearing, confessions, and biometric fusion.</div>
+                </div>
+
+                <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim); display:block; margin-bottom:6px;">
+                    GOOGLE GEMINI API KEY (OPTIONAL):
+                </label>
+                <input id="gemini-api-key-input" type="password" placeholder="AIzaSy... (Leave empty to use 100% free Local Engine)" 
+                       style="width: 100%; padding: 10px 14px; background: #030812; border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 6px; color: #fff; font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: 15px;">
+
+                <div id="api-key-status" style="font-family:var(--font-mono); font-size:0.8rem; margin-bottom: 15px; color: var(--neon-cyan);">
+                    CURRENT ENGINE: <span id="current-engine-label">Local Cognitive Semantic Engine (Active)</span>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button id="save-brain-config-btn" class="hud-btn primary-btn" style="padding: 8px 20px;">
+                    SAVE &amp; APPLY
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Scripts -->
+    <script src="/static/js/audio_analyzer.js"></script>
+    <script src="/static/js/speech_analyzer.js"></script>
+    <script src="/static/js/polygraph.js"></script>
+    <script src="/static/js/face_tracker.js"></script>
+    <script src="/static/js/detector.js"></script>
+</body>
+</html>

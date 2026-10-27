@@ -1,0 +1,22 @@
+# Environment variables & secrets
+.env
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Generated Dossiers / Output PDFs
+Forensic_Dossier_*.pdf
+test_*.pdf
