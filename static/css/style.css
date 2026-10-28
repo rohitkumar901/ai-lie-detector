@@ -1410,3 +1410,490 @@ body {
     background: #090e18;
     color: #fff;
 }
+
+/* ==========================================================================
+   3D GOLDEN MACHINERY & MECHANICAL CHRONO-POLYGRAPH STYLES
+   ========================================================================== */
+
+/* Golden Theme Overrides & Global Accents */
+.gold-machinery-header {
+    background: linear-gradient(135deg, rgba(28, 22, 12, 0.95), rgba(12, 10, 6, 0.98)) !important;
+    border: 2px solid #d4af37 !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 235, 150, 0.3), 0 0 20px rgba(212, 175, 55, 0.3) !important;
+}
+
+.gold-gear-logo {
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.6), inset 0 0 8px rgba(255, 215, 0, 0.3) !important;
+    background: radial-gradient(circle, #3d2c0b 0%, #151006 100%) !important;
+    font-size: 1.25rem;
+}
+
+.gold-title {
+    color: #fff8e7 !important;
+    text-shadow: 0 0 14px rgba(255, 215, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+.gold-badge {
+    color: #ffd700 !important;
+    border-color: #d4af37 !important;
+    background: rgba(212, 175, 55, 0.15) !important;
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+}
+
+.gold-subtitle {
+    color: #d4af37 !important;
+    letter-spacing: 1.5px;
+}
+
+/* Rotating Gear Animations */
+@keyframes spinGearClockwise {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes spinGearCounterClockwise {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+}
+
+.spin-slow {
+    display: inline-block;
+    animation: spinGearClockwise 14s linear infinite;
+}
+
+.spin-rev-slow {
+    display: inline-block;
+    animation: spinGearCounterClockwise 14s linear infinite;
+}
+
+/* 3D Golden Machinery Main Container */
+.gold-machinery-unit {
+    background: linear-gradient(145deg, #18140c, #0a0805);
+    border: 2px solid #d4af37;
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.85), inset 0 2px 5px rgba(255, 235, 160, 0.3), 0 0 25px rgba(212, 175, 55, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.gold-unit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    padding-bottom: 8px;
+}
+
+.gold-panel-title {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    color: #ffd700;
+    letter-spacing: 2px;
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.gold-gear-icon {
+    font-size: 1.15rem;
+}
+
+/* Spoken Question Console */
+.gold-question-console {
+    background: rgba(14, 11, 7, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.console-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+}
+
+.console-tag {
+    color: #ffd700;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.mic-badge-ready {
+    background: rgba(212, 175, 55, 0.2);
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.mic-badge-recording {
+    background: rgba(255, 23, 68, 0.25);
+    border: 1px solid #ff1744;
+    color: #ff1744;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    animation: blinkWarning 0.6s infinite alternate;
+}
+
+.mic-badge-locked {
+    background: rgba(0, 230, 118, 0.2);
+    border: 1px solid #00e676;
+    color: #00e676;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.active-question-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(24, 18, 10, 0.95);
+    border: 1px dashed rgba(255, 215, 0, 0.45);
+    border-radius: 6px;
+    padding: 14px;
+}
+
+.active-q-icon {
+    font-size: 1.8rem;
+}
+
+.gold-question-display {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    color: #fff9ea;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    line-height: 1.35;
+}
+
+.question-subtext {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: #c5b896;
+    margin-top: 4px;
+}
+
+/* Question Action Bar */
+.question-action-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.gold-action-btn {
+    background: linear-gradient(135deg, #ffd700 0%, #b8860b 50%, #7c5806 100%);
+    border: 2px solid #fff2a3;
+    border-radius: 6px;
+    color: #120e05;
+    padding: 10px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-heading);
+    font-weight: bold;
+    box-shadow: 0 4px 0 #4a3403, 0 8px 18px rgba(0, 0, 0, 0.7);
+    transition: all 0.15s ease;
+}
+
+.gold-action-btn:hover {
+    box-shadow: 0 4px 0 #4a3403, 0 0 20px rgba(255, 215, 0, 0.7);
+    transform: translateY(-1px);
+}
+
+.gold-action-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #4a3403, 0 4px 8px rgba(0, 0, 0, 0.8);
+}
+
+.mic-recording-active {
+    background: linear-gradient(135deg, #ff1744 0%, #b71c1c 100%) !important;
+    border-color: #ff8a80 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 0 #5c000e, 0 0 25px rgba(255, 23, 68, 0.8) !important;
+}
+
+.quick-type-box {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    min-width: 240px;
+}
+
+.gold-text-input {
+    flex: 1;
+    background: #090704;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    outline: none;
+}
+
+.gold-text-input:focus {
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+.gold-sub-btn {
+    background: rgba(212, 175, 55, 0.2);
+    border: 1px solid #d4af37;
+    color: #ffd700;
+    font-family: var(--font-heading);
+    font-weight: bold;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.gold-sub-btn:hover {
+    background: #d4af37;
+    color: #000;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+}
+
+/* ==========================================================================
+   3D MECHANICAL 4-BLINK DECEPTION OVERDRIVE GAUGE (USER'S EXACT RULE)
+   ========================================================================== */
+.gold-blink-overdrive-card {
+    background: linear-gradient(145deg, #141009, #080604);
+    border: 1.5px solid rgba(212, 175, 55, 0.5);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 18px rgba(212, 175, 55, 0.15);
+}
+
+.blink-gauge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.gear-badge {
+    font-family: var(--font-heading);
+    font-size: 0.78rem;
+    color: #ffd700;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+}
+
+.rule-tag {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: #ffaa00;
+    margin-left: 8px;
+}
+
+.blink-digital-readout {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    color: #fff8e7;
+    letter-spacing: 1.5px;
+}
+
+.blink-digital-readout strong {
+    color: #ffd700;
+    font-size: 1.45rem;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
+}
+
+/* 4 Golden Gear Slot Indicators */
+.blink-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.blink-slot {
+    background: #0a0805;
+    border: 1.5px solid rgba(212, 175, 55, 0.25);
+    border-radius: 6px;
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.slot-num {
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    color: #796645;
+    font-weight: bold;
+}
+
+.slot-gear {
+    font-size: 1.5rem;
+    filter: grayscale(100%) opacity(0.35);
+    transition: all 0.25s ease;
+}
+
+.slot-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: #796645;
+}
+
+/* Active Slot Gears */
+.slot-active-gold {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.25) 0%, rgba(20, 15, 8, 0.95) 100%) !important;
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), inset 0 0 10px rgba(255, 215, 0, 0.3) !important;
+    transform: scale(1.04);
+}
+
+.slot-active-gold .slot-gear {
+    filter: none !important;
+    animation: spinGearClockwise 4s linear infinite;
+}
+
+.slot-active-gold .slot-num, .slot-active-gold .slot-label {
+    color: #ffd700 !important;
+    font-weight: bold;
+}
+
+/* Danger Slot 4 (>= 4 Blinks) */
+.danger-slot {
+    border-color: rgba(255, 23, 68, 0.35);
+}
+
+.slot-active-danger {
+    background: radial-gradient(circle, rgba(255, 23, 68, 0.35) 0%, rgba(30, 8, 12, 0.95) 100%) !important;
+    border-color: #ff1744 !important;
+    box-shadow: 0 0 25px rgba(255, 23, 68, 0.8), inset 0 0 12px rgba(255, 23, 68, 0.5) !important;
+    transform: scale(1.08);
+    animation: dangerFlash 0.5s infinite alternate;
+}
+
+@keyframes dangerFlash {
+    0% { box-shadow: 0 0 15px rgba(255, 23, 68, 0.5); }
+    100% { box-shadow: 0 0 35px rgba(255, 23, 68, 1); }
+}
+
+.slot-active-danger .slot-gear {
+    filter: none !important;
+    animation: pulseDot 0.6s infinite alternate;
+}
+
+.slot-active-danger .slot-num, .slot-active-danger .slot-label {
+    color: #ff1744 !important;
+    font-weight: bold;
+}
+
+.blink-progress-track {
+    height: 10px;
+    background: rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.blink-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffd700 0%, #ff9100 70%, #ff1744 100%);
+    box-shadow: 0 0 10px #ffd700;
+    transition: width 0.15s ease;
+}
+
+.blink-status-footer {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+.blink-status-footer.green-normal {
+    color: #00e676;
+    text-shadow: 0 0 8px rgba(0, 230, 118, 0.5);
+}
+
+.blink-status-footer.red-alert {
+    color: #ff1744;
+    text-shadow: 0 0 10px rgba(255, 23, 68, 0.8);
+    animation: blinkWarning 0.5s infinite alternate;
+}
+
+/* ==========================================================================
+   TACTILE 3D GOLDEN MECHANICAL LEVER BUTTON
+   ========================================================================== */
+.interrogation-trigger-row {
+    display: flex;
+    margin-top: 4px;
+}
+
+.gold-3d-lever-btn {
+    flex: 1;
+    position: relative;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #ffd700 0%, #c49a2c 40%, #8c6a15 80%, #573e05 100%);
+    border: 2px solid #fff5b8;
+    border-radius: 8px;
+    color: #140f04;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 7px 0 #3a2803, 0 14px 28px rgba(0, 0, 0, 0.8), 0 0 25px rgba(255, 215, 0, 0.35);
+    transition: all 0.12s ease;
+    overflow: hidden;
+}
+
+.gold-3d-lever-btn:hover {
+    box-shadow: 0 7px 0 #3a2803, 0 18px 34px rgba(0, 0, 0, 0.85), 0 0 35px rgba(255, 215, 0, 0.6);
+    transform: translateY(-2px);
+}
+
+.gold-3d-lever-btn:active {
+    transform: translateY(5px);
+    box-shadow: 0 2px 0 #3a2803, 0 6px 12px rgba(0, 0, 0, 0.9);
+}
+
+.lever-content {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    gap: 3px;
+}
+
+.lever-content strong {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.lever-content small {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #3b2803;
+    letter-spacing: 1px;
+}
+
+.lever-gear {
+    font-size: 1.8rem;
+}

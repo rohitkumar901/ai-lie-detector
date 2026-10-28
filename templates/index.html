@@ -18,14 +18,14 @@
     <!-- MAIN INTERFACE -->
     <div class="app-container">
         <!-- TOP HUD HEADER -->
-        <header class="hud-header">
+        <header class="hud-header gold-machinery-header">
             <div class="header-left">
-                <div class="hud-logo-icon">
-                    <span class="pulse-dot"></span>
+                <div class="hud-logo-icon gold-gear-logo">
+                    <span class="gear-cog spin-slow">⚙️</span>
                 </div>
                 <div>
-                    <h1 class="hud-title">A.I. POLYGRAPH <span class="version-tag">MULTIMODAL v4.5</span></h1>
-                    <p class="hud-subtitle">LIVE SPEECH-TO-TEXT, LINGUISTIC ANALYSIS, rPPG &amp; BIOMETRIC SYSTEM</p>
+                    <h1 class="hud-title gold-title">CHRONO-POLYGRAPH <span class="version-tag gold-badge">3D GOLDEN MACHINERY v5.0</span></h1>
+                    <p class="hud-subtitle gold-subtitle">OCULAR BLINK DECEPTION ENGINE, LIVE SPEECH INQUIRY &amp; rPPG BIOSENSOR</p>
                 </div>
             </div>
 
@@ -252,40 +252,115 @@
                     </div>
                 </div>
 
-                <!-- Interrogation Control Unit -->
-                <div class="interrogation-unit">
-                    <div class="question-display-box">
-                        <div class="question-meta">
-                            <span>CURRENT INTERROGATION QUESTION</span>
-                            <span id="q-counter">Q 1/10</span>
-                        </div>
-                        <h2 id="question-text" class="question-text">Are you speaking the truth right now?</h2>
+                <!-- 3D GOLDEN MACHINERY INTERROGATION CONSOLE (USER-SPOKEN QUESTION + 4-BLINK ENGINE) -->
+                <div class="gold-machinery-unit">
+                    <div class="gold-unit-header">
+                        <span class="gold-gear-icon spin-slow">⚙️</span>
+                        <span class="gold-panel-title">CH-05 : 3D GOLDEN MECHANICAL INTERROGATOR</span>
+                        <span class="gold-gear-icon spin-rev-slow">⚙️</span>
                     </div>
 
-                    <div class="interrogation-actions">
-                        <button id="prev-q-btn" class="action-btn icon-btn" title="Previous Question">◀</button>
-                        <button id="scan-now-btn" class="action-btn scan-trigger-btn">
-                            <span class="btn-glow-pulse"></span>
-                            <span class="btn-icon">⚡</span>
-                            <span class="btn-text">
-                                <strong>START LIE TEST</strong>
-                                <small>5-SECOND BIOMETRIC SCAN [SPACEBAR]</small>
+                    <!-- Spoken Question Card & Mic Trigger -->
+                    <div class="gold-question-console">
+                        <div class="console-label-row">
+                            <span class="console-tag">⚡ ACTIVE INTERROGATION INQUIRY</span>
+                            <span id="mic-status-badge" class="mic-badge-ready">MIC READY</span>
+                        </div>
+
+                        <div class="active-question-card">
+                            <div class="active-q-icon spin-on-speak">🎙️</div>
+                            <div class="active-q-content">
+                                <h3 id="question-text" class="gold-question-display">"Click the Golden Mic and ask your question aloud..."</h3>
+                                <div class="question-subtext" id="question-meta-subtext">Mic dabayein aur apna sawaal bol kar poochhein</div>
+                            </div>
+                        </div>
+
+                        <!-- Question Action Bar (Mic + Text Edit) -->
+                        <div class="question-action-bar">
+                            <button id="ask-question-mic-btn" class="gold-action-btn mic-trigger-btn" title="Click to speak your question via microphone">
+                                <span class="mic-glow-wave">🎙️</span>
+                                <span class="btn-text">
+                                    <strong id="mic-btn-main-label">ASK QUESTION (MIC)</strong>
+                                    <small id="mic-btn-sub-label">CLICK &amp; SPEAK YOUR QUESTION</small>
+                                </span>
+                            </button>
+
+                            <div class="quick-type-box">
+                                <input id="custom-question-input" type="text" placeholder="Or type your question here directly..." class="gold-text-input">
+                                <button id="set-question-btn" class="gold-sub-btn">APPLY</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3D Mechanical 4-Blink Deception Overdrive Gauge (USER'S EXACT RULE) -->
+                    <div class="gold-blink-overdrive-card">
+                        <div class="blink-gauge-header">
+                            <div class="bgh-left">
+                                <span class="gear-badge">⚙️ OCULAR BLINK DECEPTION GAUGE</span>
+                                <span class="rule-tag">RULE: &ge; 4 BLINKS = FALSE / LIE | &lt; 4 BLINKS = TRUTH</span>
+                            </div>
+                            <div class="bgh-right">
+                                <span class="blink-digital-readout">EXAM BLINKS: <strong id="exam-live-blinks">0</strong> / 4 MAX</span>
+                            </div>
+                        </div>
+
+                        <!-- 4 Golden Gear Slot Indicators -->
+                        <div class="blink-slots-grid">
+                            <div class="blink-slot" id="blink-slot-1">
+                                <span class="slot-num">1</span>
+                                <span class="slot-gear">⚙️</span>
+                                <span class="slot-label">NORMAL</span>
+                            </div>
+                            <div class="blink-slot" id="blink-slot-2">
+                                <span class="slot-num">2</span>
+                                <span class="slot-gear">⚙️</span>
+                                <span class="slot-label">NORMAL</span>
+                            </div>
+                            <div class="blink-slot" id="blink-slot-3">
+                                <span class="slot-num">3</span>
+                                <span class="slot-gear">⚙️</span>
+                                <span class="slot-label">ELEVATED</span>
+                            </div>
+                            <div class="blink-slot danger-slot" id="blink-slot-4">
+                                <span class="slot-num">4+</span>
+                                <span class="slot-gear">🚨</span>
+                                <span class="slot-label">LIE OVERDRIVE</span>
+                            </div>
+                        </div>
+
+                        <!-- Mechanical Progress Bar -->
+                        <div class="blink-progress-track">
+                            <div id="blink-progress-fill" class="blink-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="blink-status-footer" id="exam-blink-status-footer">
+                            STATUS: STEADY / WITHIN TRUTH BOUNDS (&lt; 4 BLINKS)
+                        </div>
+                    </div>
+
+                    <!-- Big Tactile 3D Golden Examination Lever / Button -->
+                    <div class="interrogation-trigger-row">
+                        <button id="scan-now-btn" class="gold-3d-lever-btn">
+                            <span class="lever-shine"></span>
+                            <span class="lever-gear left spin-slow">⚙️</span>
+                            <span class="lever-content">
+                                <strong id="lever-main-text">ENGAGE 5-SECOND BLINK &amp; BIOMETRIC SCAN</strong>
+                                <small>CLICK OR PRESS SPACEBAR (4 BLINKS = FALSE / LIE)</small>
                             </span>
+                            <span class="lever-gear right spin-rev-slow">⚙️</span>
                         </button>
-                        <button id="next-q-btn" class="action-btn icon-btn" title="Next Question">▶</button>
                     </div>
 
                     <!-- Instant Test Demos for quick verification -->
                     <div class="demo-buttons-row">
                         <span class="demo-label">TEST DEMO:</span>
-                        <button id="demo-lie-btn" class="demo-btn red-btn">SIMULATE LIE</button>
-                        <button id="demo-truth-btn" class="demo-btn green-btn">SIMULATE TRUTH</button>
+                        <button id="demo-lie-btn" class="demo-btn red-btn">DEMO: 5 BLINKS (LIE)</button>
+                        <button id="demo-truth-btn" class="demo-btn green-btn">DEMO: 2 BLINKS (TRUTH)</button>
                     </div>
 
                     <!-- Countdown Bar during Interrogation Scan -->
                     <div id="scan-progress-wrapper" class="scan-progress-wrapper hidden">
                         <div class="scan-status-text">
-                            <span class="blinking-warning">SCANNING... SPEAK CLEARLY &amp; MAINTAIN EYE CONTACT</span>
+                            <span class="blinking-warning">⚙️ EXAMINING OCULAR BLINK PATTERNS &amp; CARDIO PULSE...</span>
                             <span id="countdown-timer">5.0s</span>
                         </div>
                         <div class="scan-progress-track">
@@ -342,8 +417,14 @@
                 <p id="bd-ai-reasoning-text" class="vr-reasoning-text">"Analyzing statement context and psychological indicators..."</p>
             </div>
 
-            <!-- Detailed Biometric Breakdown Grid -->
-            <div class="verdict-breakdown-grid">
+            <!-- Detailed Biometric Breakdown Grid (Includes 4-Blink Rule Breakdown) -->
+            <div class="verdict-breakdown-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="breakdown-card">
+                    <div class="bd-label">👁️ OCULAR BLINK DYNAMICS</div>
+                    <div class="bd-value" id="bd-blink-text">0 Blinks (Limit: 4)</div>
+                    <div class="bd-status green-text" id="bd-blink-status">CALM &lt; 4 BLINKS</div>
+                </div>
+
                 <div class="breakdown-card">
                     <div class="bd-label">❤️ rPPG PULSE DYNAMICS</div>
                     <div class="bd-value" id="bd-pulse-text">Heart Rate: 72 BPM</div>
@@ -354,12 +435,6 @@
                     <div class="bd-label">🎯 GAZE &amp; EYE CONTACT</div>
                     <div class="bd-value" id="bd-gaze-text">Direct Eye Contact (94%)</div>
                     <div class="bd-status green-text" id="bd-gaze-status">CREDIBLE ALIGNMENT</div>
-                </div>
-
-                <div class="breakdown-card">
-                    <div class="bd-label">🎭 MICRO-EXPRESSIONS</div>
-                    <div class="bd-value" id="bd-micro-text">Steady / Neutral</div>
-                    <div class="bd-status green-text" id="bd-micro-status">NO DECEPTIVE TENSION</div>
                 </div>
 
                 <div class="breakdown-card">

@@ -12,10 +12,11 @@
 class LieDetectorEngine {
     constructor() {
         this.currentStress = 16;
-        this.questions = [];
-        this.currentQIndex = 0;
         this.activeCase = null;
         this.recordsCount = 0;
+        this.activeSpokenQuestion = "Did you speak the absolute truth?";
+        this.examStartBlinkCount = 0;
+        this.examBlinksDetected = 0;
 
         // 5-Second Active Interrogation Scan State
         this.isScanning = false;
@@ -47,16 +48,11 @@ class LieDetectorEngine {
             const data = await res.json();
             if (data.status === 'success') {
                 this.activeCase = data.case;
-                this.scenarios = data.scenarios;
-                this.questions = data.questions || [];
                 this.recordsCount = data.total_records || 0;
-                this.currentQIndex = 0;
                 this.updateCaseDisplay();
-                this.updateQuestionDisplay();
             }
         } catch (e) {
-            console.warn("Could not load case details, loading default questions:", e);
-            await this.loadQuestions();
+            console.warn("Could not load case details:", e);
         }
     }
 
@@ -80,25 +76,6 @@ class LieDetectorEngine {
                                this.activeCase.scenario_key === 'general' ? 'GENERAL' : 'VAULT ROBBERY';
             hudBadge.innerText = shortBadge;
         }
-    }
-
-    async loadQuestions() {
-        try {
-            const res = await fetch('/api/questions');
-            const data = await res.json();
-            if (data.questions && data.questions.length > 0) {
-                this.questions = data.questions;
-            }
-        } catch (e) {
-            this.questions = [
-                { id: 1, text: "Are you speaking the truth right now?" },
-                { id: 2, text: "Were you present near the crime scene between 10 PM and midnight?" },
-                { id: 3, text: "Did you take or conceal any portion of the stolen assets?" },
-                { id: 4, text: "Have you ever made a false excuse to avoid accountability?" },
-                { id: 5, text: "Is everything you have told me today the absolute truth?" }
-            ];
-        }
-        this.updateQuestionDisplay();
     }
 
     updateQuestionDisplay() {
@@ -165,7 +142,7 @@ class LieDetectorEngine {
     }
 
     // =========================================================================
-    //   5-SECOND INTERROGATION SCAN PROCEDURE
+    //   5-SECOND INTERROGATION SCAN PROCEDURE (TRACKS 4-BLINK DECEPTION RULE)
     // =========================================================================
 
     startInterrogationScan() {
@@ -188,6 +165,11 @@ class LieDetectorEngine {
             browTensionCount: 0,
             voiceStressSamples: []
         };
+
+        // Capture starting blink count at scan engagement
+        this.examStartBlinkCount = ft ? ft.blinkCount : 0;
+        this.examBlinksDetected = 0;
+        this.updateLiveBlinkUI(0);
 
         // UI animations
         const cameraPanel = document.querySelector('.camera-panel');
@@ -214,6 +196,13 @@ class LieDetectorEngine {
             if (progressBar) progressBar.style.width = `${progressPct}%`;
             if (countdownTimer) countdownTimer.innerText = `${remainingSec}s`;
 
+            // Live Blink Detection during Answer Period
+            if (ft) {
+                const curBlinks = ft.blinkCount || 0;
+                this.examBlinksDetected = Math.max(0, curBlinks - this.examStartBlinkCount);
+                this.updateLiveBlinkUI(this.examBlinksDetected);
+            }
+
             // Audio tension feedback
             if (ab && Math.floor(elapsedMs / 250) % 2 === 0) {
                 ab.playScanTension(progressPct / 100);
@@ -238,6 +227,39 @@ class LieDetectorEngine {
                 this.completeInterrogationScan();
             }
         }, 80);
+    }
+
+    updateLiveBlinkUI(count) {
+        const countElem = document.getElementById('exam-live-blinks');
+        const fillElem = document.getElementById('blink-progress-fill');
+        const footerElem = document.getElementById('exam-blink-status-footer');
+
+        if (countElem) countElem.innerText = count;
+        if (fillElem) fillElem.style.width = `${Math.min(100, (count / 4) * 100)}%`;
+
+        // Update 4 Golden Gear Slot Indicators
+        for (let i = 1; i <= 4; i++) {
+            const slot = document.getElementById(`blink-slot-${i}`);
+            if (slot) {
+                if (i <= 3) {
+                    if (count >= i) slot.classList.add('slot-active-gold');
+                    else slot.classList.remove('slot-active-gold');
+                } else {
+                    if (count >= 4) slot.classList.add('slot-active-danger');
+                    else slot.classList.remove('slot-active-danger');
+                }
+            }
+        }
+
+        if (footerElem) {
+            if (count >= 4) {
+                footerElem.innerText = `🚨 ${count} BLINKS DETECTED! EXCEEDED 4-BLINK LIMIT (FALSE / LIE TRIGGERED)`;
+                footerElem.className = "blink-status-footer red-alert";
+            } else {
+                footerElem.innerText = `STATUS: NORMAL OCULAR FREQUENCY (${count} / 4 BLINKS - TRUTH)`;
+                footerElem.className = "blink-status-footer green-normal";
+            }
+        }
     }
 
     async completeInterrogationScan() {
@@ -289,17 +311,31 @@ class LieDetectorEngine {
         // 5. Spoken Speech & Linguistic Analysis
         const sa = window.speechAnalyzer;
         const spokenText = (sa && sa.currentTranscript.trim().length > 0) ? sa.currentTranscript.trim() : "";
-        const lingStress = sa ? sa.linguisticStressScore : 15;
         let markers = sa ? sa.detectedMarkers : [];
 
-        // Question Context
-        const curQ = this.questions[this.currentQIndex];
-        const questionText = curQ ? (curQ.text || curQ.text_en) : "General Statement";
+        // Question Context (User asked question or custom typed question)
+        const customQVal = document.getElementById('custom-question-input') ? document.getElementById('custom-question-input').value.trim() : "";
+        const questionText = (sa && sa.currentQuestionText && sa.currentQuestionText.trim().length > 0)
+            ? sa.currentQuestionText.trim()
+            : (customQVal.length > 0 ? customQVal : (this.activeSpokenQuestion || "Did you commit the alleged act?"));
 
         // =====================================================================
-        //   CALL COGNITIVE AI REASONING CORE (GEMINI / LOCAL ML THINKING)
+        //   USER DECEPTION RULE:
+        //   "agar meri eyes blink higi 4 time jada to false bolega unless truth"
         // =====================================================================
-        let aiResult = null;
+        const totalBlinks = this.examBlinksDetected;
+        const isLie = (totalBlinks >= 4);
+        const confidence = isLie 
+            ? Math.min(99, 86 + (totalBlinks - 4) * 4) 
+            : Math.min(98, 88 + (4 - totalBlinks) * 3);
+
+        const reasoning = isLie
+            ? `Abnormal ocular flutter detected: Subject blinked ${totalBlinks} times during examination, exceeding the 4-blink threshold! Excessive ocular flutter confirms deception.`
+            : `Steady ocular stability verified: Subject blinked only ${totalBlinks} time(s) during examination (strictly within truthful threshold < 4 blinks). Steady gaze confirmed truth.`;
+
+        const voiceVerdict = isLie ? "Sorry sir, you are lying." : "Yes, this is truth.";
+
+        // Call backend cognitive API for historical logging and multimodal dossier integration
         try {
             const apiKey = localStorage.getItem('gemini_api_key') || "";
             const response = await fetch('/api/cognitive_interrogate', {
@@ -315,55 +351,25 @@ class LieDetectorEngine {
                         eye_contact_score: avgContact,
                         voice_stress: avgVoice,
                         brow_tension: browTensionDetected,
-                        micro_expression: browTensionDetected ? "AU4 BROW TENSION" : "STEADY"
+                        micro_expression: browTensionDetected ? "AU4 BROW TENSION" : "STEADY",
+                        blink_count: totalBlinks,
+                        exam_blinks: totalBlinks
                     },
                     api_key: apiKey
                 })
             });
             if (response.ok) {
-                aiResult = await response.json();
                 this.recordsCount++;
                 const countElem = document.getElementById('banner-records-count');
                 if (countElem) countElem.innerText = this.recordsCount;
             }
         } catch (e) {
-            console.warn("Cognitive API fetch error, using local fallback evaluation:", e);
+            console.warn("Cognitive API fetch error:", e);
         }
 
         if (progressWrapper) progressWrapper.classList.add('hidden');
 
-        // Determine Verdict from Cognitive AI Engine
-        let isLie = false;
-        let confidence = 85;
-        let reasoning = "";
-        let engine = "Cognitive Semantic Engine";
-        let voiceVerdict = "Sorry sir, you are lying.";
-
-        if (aiResult && aiResult.verdict) {
-            isLie = (aiResult.verdict === 'LIE');
-            confidence = aiResult.confidence || 85;
-            reasoning = aiResult.reasoning || "";
-            engine = aiResult.engine || "Cognitive AI Engine";
-            voiceVerdict = aiResult.voice_verdict || (isLie ? "Sorry sir, you are lying." : "Yes, this is truth.");
-            if (aiResult.deception_markers && aiResult.deception_markers.length > 0) {
-                markers = aiResult.deception_markers.map(m => typeof m === 'string' ? { msg: m } : m);
-            }
-        } else {
-            // Local fallback logic
-            let gazeStress = Math.max(5, 100 - avgContact);
-            let bpmStress = Math.min(100, Math.max(0, deltaBpm * 4.5));
-            const compositeDeceptionScore = Math.round(
-                (lingStress * 0.35) + (gazeStress * 0.30) + (bpmStress * 0.20) + (avgVoice * 0.15)
-            );
-            isLie = (compositeDeceptionScore >= 45) || (lingStress >= 48) || (avgContact < 50);
-            confidence = isLie ? Math.max(72, compositeDeceptionScore) : Math.min(25, compositeDeceptionScore);
-            reasoning = isLie 
-                ? "Subject exhibited physiological tension and linguistic markers indicative of fabrication."
-                : "Biometric and verbal responses align calmly within verified truth baselines.";
-            voiceVerdict = isLie ? "Sorry sir, you are lying." : "Yes, this is truth.";
-        }
-
-        // Show Dramatic Verdict Screen
+        // Show Dramatic Verdict Screen with exact 4-blink verdict
         this.showVerdictModal({
             isLie: isLie,
             spokenText: spokenText,
@@ -372,9 +378,10 @@ class LieDetectorEngine {
             deltaBpm: deltaBpm,
             eyeContact: avgContact,
             browTension: browTensionDetected,
-            deceptionScore: isLie ? Math.max(68, confidence) : Math.min(26, 100 - confidence),
+            blinks: totalBlinks,
+            deceptionScore: isLie ? Math.max(74, confidence) : Math.min(22, 100 - confidence),
             reasoning: reasoning,
-            engine: engine,
+            engine: "3D Golden Ocular Blink Engine",
             voiceVerdict: voiceVerdict
         });
     }
@@ -451,7 +458,11 @@ class LieDetectorEngine {
                 window.audioBio.speakVerdict(voicePhrase, true);
             }
 
-            // Evidence Breakdown
+            // Evidence Breakdown (Includes 4-Blink Evidence Breakdown)
+            this.setBreakdownCard('bd-blink-text', 'bd-blink-status',
+                `${data.blinks !== undefined ? data.blinks : 5} Blinks (Limit: 4)`,
+                "4+ BLINK BURST EXCEEDED (LIE DETECTED)", true);
+
             const sign = data.deltaBpm >= 0 ? "+" : "";
             this.setBreakdownCard('bd-pulse-text', 'bd-pulse-status',
                 `Pulse: ${data.heartRate} BPM (${sign}${data.deltaBpm} BPM)`,
@@ -460,10 +471,6 @@ class LieDetectorEngine {
             this.setBreakdownCard('bd-gaze-text', 'bd-gaze-status',
                 `Contact: ${data.eyeContact}%`,
                 data.eyeContact < 50 ? "CAMERA EYE CONTACT BROKEN" : "VISUAL FOCUS STRAIN", true);
-
-            this.setBreakdownCard('bd-micro-text', 'bd-micro-status',
-                data.browTension ? "AU4 Brow Furrow & High Tension" : "Micro-Fidgeting / Stress",
-                "COGNITIVE STRAIN DETECTED", true);
 
             this.setBreakdownCard('bd-stress-text', 'bd-stress-status',
                 `Forensic Deception Index: ${data.deceptionScore}%`,
@@ -485,6 +492,11 @@ class LieDetectorEngine {
                 window.audioBio.speakVerdict(voicePhrase, false);
             }
 
+            // Evidence Breakdown
+            this.setBreakdownCard('bd-blink-text', 'bd-blink-status',
+                `${data.blinks !== undefined ? data.blinks : 1} Blinks (Limit: 4)`,
+                "NORMAL OCULAR STABILITY (< 4 BLINKS)", false);
+
             const sign = data.deltaBpm >= 0 ? "+" : "";
             this.setBreakdownCard('bd-pulse-text', 'bd-pulse-status',
                 `Pulse: ${data.heartRate} BPM (${sign}${data.deltaBpm} BPM)`,
@@ -493,10 +505,6 @@ class LieDetectorEngine {
             this.setBreakdownCard('bd-gaze-text', 'bd-gaze-status',
                 `Contact: ${data.eyeContact}% (Direct Alignment)`,
                 "DIRECT CAMERA CONTACT MAINTAINED", false);
-
-            this.setBreakdownCard('bd-micro-text', 'bd-micro-status',
-                "Relaxed Facial Action Units (Neutral)",
-                "STEADY PHYSIOLOGICAL STATE", false);
 
             this.setBreakdownCard('bd-stress-text', 'bd-stress-status',
                 `Credibility Index: ${credibility}%`,
@@ -507,12 +515,12 @@ class LieDetectorEngine {
 
         // Log to backend
         try {
-            const curQ = this.questions[this.currentQIndex];
+            const curQ = this.activeSpokenQuestion || "General Inquiry";
             fetch('/api/log_verdict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    question: curQ ? (curQ.text || curQ.text_en) : "General Statement",
+                    question: curQ,
                     verdict: data.isLie ? "LIE" : "TRUTH",
                     heart_rate_bpm: data.heartRate,
                     eye_contact_score: data.eyeContact,
@@ -543,8 +551,6 @@ class LieDetectorEngine {
         if (window.speechAnalyzer) {
             window.speechAnalyzer.resetTranscript();
         }
-
-        this.nextQuestion();
     }
 
     bindEvents() {
@@ -557,22 +563,23 @@ class LieDetectorEngine {
             });
         }
 
-        // Demo Buttons
+        // Demo Buttons (User exact 4-blink rule testing)
         const demoLieBtn = document.getElementById('demo-lie-btn');
         if (demoLieBtn) {
             demoLieBtn.addEventListener('click', () => {
                 if (window.audioBio) window.audioBio.ensureAudioContext();
                 this.showVerdictModal({
                     isLie: true,
-                    spokenText: "Honestly speaking, trust me I swear I did not do it...",
-                    markers: [{ msg: "Over-promising honesty ('honestly, trust me, swear')" }],
+                    spokenText: "I did not touch anything, I swear...",
+                    markers: [{ msg: "Ocular Flutter: 5 Blinks (exceeded 4-blink limit)" }],
                     heartRate: 88.5,
                     deltaBpm: 16.5,
-                    eyeContact: 32,
+                    eyeContact: 42,
                     browTension: true,
-                    deceptionScore: 89,
-                    reasoning: "Subject used intense over-promising language ('swear, trust me'), paired with severe gaze avoidance (32%) and +16.5 BPM tachycardia spike.",
-                    engine: "Cognitive AI Interrogator",
+                    blinks: 5,
+                    deceptionScore: 92,
+                    reasoning: "Abnormal ocular flutter detected: Subject blinked 5 times during interrogation (exceeded 4-blink limit)! Deception triggered.",
+                    engine: "3D Golden Ocular Engine",
                     voiceVerdict: "Sorry sir, you are lying."
                 });
             });
@@ -590,7 +597,14 @@ class LieDetectorEngine {
                     deltaBpm: -1.0,
                     eyeContact: 96,
                     browTension: false,
-                    deceptionScore: 12,
+                    blinks: 2,
+                    deceptionScore: 14,
+                    reasoning: "Steady ocular stability verified: Subject blinked only 2 times during interrogation (within calm truth threshold < 4 blinks).",
+                    engine: "3D Golden Ocular Engine",
+                    voiceVerdict: "Yes, this is truth."
+                });
+            });
+        }
                     reasoning: "Direct unhedged verbal affirmation with unbroken camera gaze (96%) and calm resting heart rate within baseline bounds.",
                     engine: "Cognitive AI Interrogator",
                     voiceVerdict: "Yes, this is truth."

@@ -229,12 +229,15 @@ Respond ONLY in strict, valid JSON format:
                 markers.append(label)
                 evasion_detected = True
 
-        # --- RULE 5: Biometric Alignment (Heart Rate, Gaze, Micro-Expressions) ---
+        # --- RULE 5: Biometric Alignment (Heart Rate, Gaze, Micro-Expressions, Blink Burst) ---
         contact = biometrics.get('eye_contact_score', 85)
         delta_bpm = biometrics.get('delta_bpm', 0.0)
         brow_tension = biometrics.get('brow_tension', False)
         voice_stress = biometrics.get('voice_stress', 15)
+        exam_blinks = biometrics.get('exam_blinks', biometrics.get('blink_count', 0))
 
+        if exam_blinks >= 4:
+            markers.append(f"Abnormal Ocular Flutter / Rapid Blink Burst ({exam_blinks} blinks >= 4 threshold)")
         if delta_bpm > 11.0:
             markers.append(f"Cardiovascular Tachycardia Spike (+{delta_bpm} BPM above baseline)")
         if contact < 50:
@@ -245,12 +248,12 @@ Respond ONLY in strict, valid JSON format:
             markers.append(f"High Vocal Frequency Micro-Tremor ({voice_stress}%)")
 
         # --- DECISION SYNTHESIS ---
-        # A lie is confirmed if:
-        # 1. Spoke emphatic swearing/evasion AND biometrics show stress OR
-        # 2. Eye contact is broken (<50%) OR
-        # 3. Heart rate spiked (+12 BPM) with brow tension OR
-        # 4. Spoke deceptive phrases
-        if emphatic_detected or evasion_detected:
+        # User Rule: If blinks >= 4 times -> FALSE / LIE, unless -> TRUTH
+        if exam_blinks >= 4:
+            is_lie = True
+            confidence = 94
+            reasoning = f"Abnormal ocular flutter detected: Subject blinked {exam_blinks} times during examination, exceeding the 4-blink threshold! Excessive ocular flutter confirms deception."
+        elif emphatic_detected or evasion_detected:
             is_lie = True
             confidence = 88
             reasoning = f"Subject employed deceptive linguistic patterns ({', '.join(markers[:2])}) while speaking."
@@ -268,8 +271,8 @@ Respond ONLY in strict, valid JSON format:
             reasoning = f"Multiple deception indicators detected: {', '.join(markers[:2])}."
         else:
             is_lie = False
-            confidence = 90
-            reasoning = "Direct, un-hedged statement with calm cardiovascular pulse and steady eye contact."
+            confidence = 92
+            reasoning = f"Steady ocular stability verified: Subject blinked only {exam_blinks} time(s) (within calm truthful threshold < 4 blinks). Steady gaze confirmed truth."
 
         return {
             "verdict": "LIE" if is_lie else "TRUTH",

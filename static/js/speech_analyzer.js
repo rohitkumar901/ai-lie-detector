@@ -42,6 +42,10 @@ class RealtimeSpeechAnalyzer {
             ]
         };
 
+        this.isQuestionMode = false;
+        this.currentQuestionText = "Are you speaking the truth right now?";
+        this.questionSilenceTimer = null;
+
         this.init();
     }
 
@@ -123,17 +127,74 @@ class RealtimeSpeechAnalyzer {
             });
         }
 
-        const manualInput = document.getElementById('manual-speech-input');
-        const manualBtn = document.getElementById('set-speech-btn');
-        if (manualBtn && manualInput) {
-            manualBtn.addEventListener('click', () => {
-                this.setManualTranscript(manualInput.value);
+        // Question Mic & Direct Input Binding
+        const askMicBtn = document.getElementById('ask-question-mic-btn');
+        if (askMicBtn) {
+            askMicBtn.addEventListener('click', () => this.toggleQuestionMode());
+        }
+
+        const customQInput = document.getElementById('custom-question-input');
+        const setQBtn = document.getElementById('set-question-btn');
+        if (setQBtn && customQInput) {
+            setQBtn.addEventListener('click', () => {
+                this.setDirectQuestion(customQInput.value);
             });
-            manualInput.addEventListener('keydown', (e) => {
+            customQInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    this.setManualTranscript(manualInput.value);
+                    this.setDirectQuestion(customQInput.value);
                 }
             });
+        }
+    }
+
+    toggleQuestionMode() {
+        this.isQuestionMode = !this.isQuestionMode;
+        const askMicBtn = document.getElementById('ask-question-mic-btn');
+        const mainLabel = document.getElementById('mic-btn-main-label');
+        const subLabel = document.getElementById('mic-btn-sub-label');
+        const statusBadge = document.getElementById('mic-status-badge');
+        const qSubtext = document.getElementById('question-meta-subtext');
+
+        if (this.isQuestionMode) {
+            if (askMicBtn) askMicBtn.classList.add('mic-recording-active');
+            if (mainLabel) mainLabel.innerText = "🔴 LISTENING TO QUESTION...";
+            if (subLabel) subLabel.innerText = "SPEAK CLEARLY (CLICK TO LOCK)";
+            if (statusBadge) {
+                statusBadge.innerText = "INTERROGATOR SPEAKING";
+                statusBadge.className = "mic-badge-recording";
+            }
+            if (qSubtext) qSubtext.innerText = "Awaaz capture ho rahi hai...";
+            this.ensureListening();
+        } else {
+            if (askMicBtn) askMicBtn.classList.remove('mic-recording-active');
+            if (mainLabel) mainLabel.innerText = "ASK QUESTION (MIC)";
+            if (subLabel) subLabel.innerText = "CLICK & SPEAK YOUR QUESTION";
+            if (statusBadge) {
+                statusBadge.innerText = "QUESTION LOCKED";
+                statusBadge.className = "mic-badge-locked";
+            }
+            if (qSubtext) qSubtext.innerText = "Sawaal set ho chuka hai! Ab examine karein.";
+        }
+    }
+
+    setDirectQuestion(text) {
+        if (!text || text.trim().length === 0) return;
+        this.currentQuestionText = text.trim();
+        const qDisplay = document.getElementById('question-text');
+        const qSubtext = document.getElementById('question-meta-subtext');
+        if (qDisplay) qDisplay.innerText = `"${this.currentQuestionText}"`;
+        if (qSubtext) qSubtext.innerText = "Manual question set. Ready for ocular scan!";
+        if (window.lieEngine) {
+            window.lieEngine.activeSpokenQuestion = this.currentQuestionText;
+        }
+    }
+
+    ensureListening() {
+        if (!this.recognition) return;
+        try {
+            this.recognition.start();
+        } catch (e) {
+            // Already active
         }
     }
 
@@ -159,12 +220,33 @@ class RealtimeSpeechAnalyzer {
         }
 
         const combined = (finalTranscript + " " + interimTranscript).trim();
-        if (combined.length > 0) {
-            this.currentTranscript = combined;
-            this.lastSpokeTime = Date.now();
-            this.analyzeLinguisticDeception(this.currentTranscript);
-            this.renderTranscriptUI(this.currentTranscript);
+        if (combined.length === 0) return;
+
+        // If currently recording Interrogator Question
+        if (this.isQuestionMode) {
+            this.currentQuestionText = combined;
+            const qDisplay = document.getElementById('question-text');
+            const customQInput = document.getElementById('custom-question-input');
+            if (qDisplay) qDisplay.innerText = `"${this.currentQuestionText}"`;
+            if (customQInput) customQInput.value = this.currentQuestionText;
+            if (window.lieEngine) {
+                window.lieEngine.activeSpokenQuestion = this.currentQuestionText;
+            }
+
+            clearTimeout(this.questionSilenceTimer);
+            this.questionSilenceTimer = setTimeout(() => {
+                if (this.isQuestionMode) {
+                    this.toggleQuestionMode();
+                }
+            }, 2500);
+            return;
         }
+
+        // Otherwise, Suspect answering
+        this.currentTranscript = combined;
+        this.lastSpokeTime = Date.now();
+        this.analyzeLinguisticDeception(this.currentTranscript);
+        this.renderTranscriptUI(this.currentTranscript);
     }
 
     analyzeLinguisticDeception(text) {
