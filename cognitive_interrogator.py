@@ -248,31 +248,15 @@ Respond ONLY in strict, valid JSON format:
             markers.append(f"High Vocal Frequency Micro-Tremor ({voice_stress}%)")
 
         # --- DECISION SYNTHESIS ---
-        # User Rule: If blinks >= 3 times -> FALSE / LIE, unless -> TRUTH
+        # Ground Rule: exam_blinks >= 3 -> FALSE / LIE, else TRUTH
         if exam_blinks >= 3:
             is_lie = True
             confidence = 95
             reasoning = f"Abnormal ocular flutter detected: Subject blinked {exam_blinks} times during examination, meeting/exceeding the 3-blink threshold! Excessive ocular flutter confirms deception."
-        elif emphatic_detected or evasion_detected:
-            is_lie = True
-            confidence = 88
-            reasoning = f"Subject employed deceptive linguistic patterns ({', '.join(markers[:2])}) while speaking."
-        elif contact < 50:
-            is_lie = True
-            confidence = 86
-            reasoning = f"Severe eye contact avoidance ({contact}%) and shifty eye movement betrayed verbal claims."
-        elif delta_bpm > 12.0 and (brow_tension or voice_stress > 35):
-            is_lie = True
-            confidence = 89
-            reasoning = f"Physiological betrayal: An acute cardiovascular spike of +{delta_bpm} BPM and brow tension contradicted verbal denial."
-        elif len(markers) >= 2:
-            is_lie = True
-            confidence = 84
-            reasoning = f"Multiple deception indicators detected: {', '.join(markers[:2])}."
         else:
             is_lie = False
             confidence = 92
-            reasoning = f"Steady ocular stability verified: Subject blinked only {exam_blinks} time(s) (within calm truthful threshold < 3 blinks). Steady gaze confirmed truth."
+            reasoning = f"Steady ocular stability verified: Subject blinked only {exam_blinks} time(s) (strictly within truthful threshold < 3 blinks). Steady gaze confirmed truth."
 
         return {
             "verdict": "LIE" if is_lie else "TRUTH",

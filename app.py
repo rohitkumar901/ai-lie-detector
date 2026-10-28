@@ -74,11 +74,11 @@ class ScientificPolygraphEngine:
         # ---------------------------------------------------------------------
         self.blink_count = 0
         self.blink_timestamps = collections.deque(maxlen=60)
-        self.last_eyes_seen = True
         self.blink_rate_bpm = 12
-        self.closed_frames_count = 0
+        self.blink_state = "OPEN"
+        self.open_frames_streak = 0
+        self.closed_frames_streak = 0
         self.last_blink_time = 0.0
-        self.baseline_eye_variance = None
 
         # ---------------------------------------------------------------------
         # 4. Facial Action Units (Micro-Expressions)
@@ -180,28 +180,14 @@ class ScientificPolygraphEngine:
                             self.compute_rppg_heart_rate()
 
                 # -------------------------------------------------------------
-                # B. Dual Motion & Cascade Real-Time Blink Tracking
+                # B. Precision Eye Tracking & Blink Transition Controller
                 # -------------------------------------------------------------
                 eye_region_h = int(fh * 0.55)
                 roi_gray = gray[fy:fy + eye_region_h, fx:fx + fw]
                 eyes = self.eye_cascade.detectMultiScale(
-                    roi_gray, scaleFactor=1.1, minNeighbors=2, minSize=(16, 16)
+                    roi_gray, scaleFactor=1.12, minNeighbors=2, minSize=(16, 16)
                 )
                 self.eyes_detected_count = len(eyes)
-
-                # Eye ROI Motion (Detects physical eyelid movement across pixels)
-                eye_motion = 0.0
-                eye_y1 = fy + int(fh * 0.20)
-                eye_y2 = fy + int(fh * 0.50)
-                eye_x1 = fx + int(fw * 0.15)
-                eye_x2 = fx + int(fw * 0.85)
-                eye_roi = gray[eye_y1:eye_y2, eye_x1:eye_x2]
-
-                if eye_roi.size > 0:
-                    if hasattr(self, 'last_eye_roi') and self.last_eye_roi is not None and self.last_eye_roi.shape == eye_roi.shape:
-                        diff = cv2.absdiff(eye_roi, self.last_eye_roi)
-                        eye_motion = float(np.mean(diff))
-                    self.last_eye_roi = eye_roi.copy()
 
                 # Eye contact score
                 if self.eyes_detected_count >= 1:
@@ -209,19 +195,27 @@ class ScientificPolygraphEngine:
                     self.eye_contact_history.append(1.0)
                 else:
                     self.eye_contact_active = False
-                    self.eye_contact_history.append(0.3)
+                    self.eye_contact_history.append(0.7)
 
-                # Real-Time Blink Trigger (Eyelid motion pulse or eyes disappear)
-                eyes_seen = (self.eyes_detected_count > 0)
-                if (now - self.last_blink_time) >= 0.14:
-                    # Blink triggered if eyes vanish OR rapid eyelid displacement detected
-                    if (self.last_eyes_seen and not eyes_seen) or (eye_motion > 4.8):
-                        self.blink_count += 1
-                        self.blink_timestamps.append(now)
-                        self.last_blink_time = now
-                        print(f"[PolygraphEngine] >>> BLINK REGISTERED! Count: {self.blink_count} (motion={eye_motion:.1f}) <<<")
-
-                self.last_eyes_seen = eyes_seen
+                # Robust Blink State Machine:
+                # 1. Normal State: Eyes open (eyes_detected_count >= 1)
+                # 2. Blink State: Eyes close for 1 to 7 frames (30ms to 240ms)
+                # 3. Re-open: Eyes reopen -> registers exactly 1 clean blink!
+                if self.eyes_detected_count >= 1:
+                    if self.blink_state == "BLINKING" and 1 <= self.closed_frames_streak <= 7:
+                        if (now - self.last_blink_time) >= 0.22:
+                            self.blink_count += 1
+                            self.blink_timestamps.append(now)
+                            self.last_blink_time = now
+                            print(f"[PolygraphEngine] >>> BLINK CONFIRMED! Total Blinks: {self.blink_count} <<<")
+                    self.blink_state = "OPEN"
+                    self.closed_frames_streak = 0
+                    self.open_frames_streak += 1
+                else:
+                    if self.open_frames_streak >= 2:
+                        self.blink_state = "BLINKING"
+                    self.closed_frames_streak += 1
+                    self.open_frames_streak = 0
 
                 # -------------------------------------------------------------
                 # C. Micro-Expressions (AU4 Brow Furrow & AU12 Lip Tension)

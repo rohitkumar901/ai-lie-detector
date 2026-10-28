@@ -371,32 +371,22 @@ class LieDetectorEngine {
             : (customQVal.length > 0 ? customQVal : (this.activeSpokenQuestion || "Did you commit the alleged act?"));
 
         // =====================================================================
-        //   USER DECEPTION RULE (3-BLINK THRESHOLD + MULTI-FACTOR LIE TRIGGER):
-        //   "eyes agar 3 bar blink huye to false kro unless truth"
+        //   DETERMINISTIC 3-BLINK GROUND TRUTH:
+        //   totalBlinks >= 3  => FALSE / LIE  ("Sorry sir, you are lying.")
+        //   totalBlinks < 3   => TRUTH        ("Yes, this is truth.")
         // =====================================================================
         const totalBlinks = this.examBlinksDetected;
-        let isLie = (totalBlinks >= 3);
+        const isLie = (totalBlinks >= 3);
         let reasoning = "";
 
-        if (totalBlinks >= 3) {
-            isLie = true;
+        if (isLie) {
             reasoning = `Abnormal ocular flutter detected: Subject blinked ${totalBlinks} times during examination, meeting/exceeding the 3-blink threshold! Excessive ocular flutter confirms deception.`;
-        } else if (markers && markers.length > 0) {
-            isLie = true;
-            reasoning = `Linguistic deception detected: Subject used deceptive/evasive phrases (${markers.map(m => m.phrase || m.msg).join(', ')}) during testimony!`;
-        } else if (avgContact < 45) {
-            isLie = true;
-            reasoning = `Severe eye contact aversion (${avgContact}%): Subject looked away and avoided camera during critical inquiry!`;
-        } else if (deltaBpm > 12.0) {
-            isLie = true;
-            reasoning = `Cardiovascular anxiety spike (+${deltaBpm} BPM above baseline) indicated acute deception distress!`;
         } else {
-            isLie = false;
             reasoning = `Steady ocular stability verified: Subject blinked only ${totalBlinks} time(s) during examination (strictly within truthful threshold < 3 blinks). Steady gaze confirmed truth.`;
         }
 
         const confidence = isLie 
-            ? Math.min(99, 88 + Math.max(0, (totalBlinks - 3) * 4)) 
+            ? Math.min(99, 88 + (totalBlinks - 3) * 4) 
             : Math.min(98, 90 + (3 - totalBlinks) * 4);
 
         const voiceVerdict = isLie ? "Sorry sir, you are lying." : "Yes, this is truth.";
