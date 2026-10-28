@@ -111,7 +111,12 @@ class ScientificPolygraphEngine:
             if self.cap and self.cap.isOpened():
                 self.cap.release()
             self.camera_index = index
-            self.cap = cv2.VideoCapture(self.camera_index)
+            if os.name == 'nt':
+                self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+                if not self.cap.isOpened():
+                    self.cap = cv2.VideoCapture(self.camera_index)
+            else:
+                self.cap = cv2.VideoCapture(self.camera_index)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
             print(f"[PolygraphEngine] Opened Camera index {self.camera_index}: isOpened={self.cap.isOpened()}")
@@ -175,59 +180,48 @@ class ScientificPolygraphEngine:
                             self.compute_rppg_heart_rate()
 
                 # -------------------------------------------------------------
-                # B. High-Speed Eye Openness & Real-Time Blink Tracking
+                # B. Dual Motion & Cascade Real-Time Blink Tracking
                 # -------------------------------------------------------------
-                eye_band_y1 = fy + int(fh * 0.18)
-                eye_band_y2 = fy + int(fh * 0.50)
-                eye_band_x1 = fx + int(fw * 0.12)
-                eye_band_x2 = fx + int(fw * 0.88)
-
-                eye_band = gray[eye_band_y1:eye_band_y2, eye_band_x1:eye_band_x2]
-                
-                # Fast Haar detection on targeted eye band
+                eye_region_h = int(fh * 0.55)
+                roi_gray = gray[fy:fy + eye_region_h, fx:fx + fw]
                 eyes = self.eye_cascade.detectMultiScale(
-                    eye_band, scaleFactor=1.05, minNeighbors=1, minSize=(12, 12)
+                    roi_gray, scaleFactor=1.1, minNeighbors=2, minSize=(16, 16)
                 )
                 self.eyes_detected_count = len(eyes)
 
-                # High-speed vertical edge variance (pupil/eyelid contrast)
-                if eye_band.size > 0:
-                    sobel_y = cv2.Sobel(eye_band, cv2.CV_32F, 0, 1, ksize=3)
-                    eye_variance = float(np.std(sobel_y))
-                    
-                    if self.baseline_eye_variance is None:
-                        self.baseline_eye_variance = max(8.0, eye_variance)
-                    else:
-                        self.baseline_eye_variance = self.baseline_eye_variance * 0.96 + eye_variance * 0.04
-                    
-                    openness_ratio = eye_variance / max(1.0, self.baseline_eye_variance)
-                else:
-                    openness_ratio = 1.0
+                # Eye ROI Motion (Detects physical eyelid movement across pixels)
+                eye_motion = 0.0
+                eye_y1 = fy + int(fh * 0.20)
+                eye_y2 = fy + int(fh * 0.50)
+                eye_x1 = fx + int(fw * 0.15)
+                eye_x2 = fx + int(fw * 0.85)
+                eye_roi = gray[eye_y1:eye_y2, eye_x1:eye_x2]
+
+                if eye_roi.size > 0:
+                    if hasattr(self, 'last_eye_roi') and self.last_eye_roi is not None and self.last_eye_roi.shape == eye_roi.shape:
+                        diff = cv2.absdiff(eye_roi, self.last_eye_roi)
+                        eye_motion = float(np.mean(diff))
+                    self.last_eye_roi = eye_roi.copy()
 
                 # Eye contact score
-                if self.eyes_detected_count >= 2 or openness_ratio > 0.85:
+                if self.eyes_detected_count >= 1:
                     self.eye_contact_active = True
                     self.eye_contact_history.append(1.0)
-                elif self.eyes_detected_count == 1 or openness_ratio > 0.65:
-                    self.eye_contact_active = True
-                    self.eye_contact_history.append(0.7)
                 else:
                     self.eye_contact_active = False
-                    self.eye_contact_history.append(0.0)
+                    self.eye_contact_history.append(0.3)
 
-                # Instant Blink Detection (Both Haar and Edge Contrast triggers)
-                is_closed = (self.eyes_detected_count == 0 and openness_ratio < 0.76) or (openness_ratio < 0.55)
+                # Real-Time Blink Trigger (Eyelid motion pulse or eyes disappear)
+                eyes_seen = (self.eyes_detected_count > 0)
+                if (now - self.last_blink_time) >= 0.14:
+                    # Blink triggered if eyes vanish OR rapid eyelid displacement detected
+                    if (self.last_eyes_seen and not eyes_seen) or (eye_motion > 4.8):
+                        self.blink_count += 1
+                        self.blink_timestamps.append(now)
+                        self.last_blink_time = now
+                        print(f"[PolygraphEngine] >>> BLINK REGISTERED! Count: {self.blink_count} (motion={eye_motion:.1f}) <<<")
 
-                if is_closed:
-                    self.closed_frames_count += 1
-                else:
-                    # Typical blink is 1 to 10 frames (~30ms to 330ms)
-                    if 1 <= self.closed_frames_count <= 10:
-                        if (now - self.last_blink_time) >= 0.10:
-                            self.blink_count += 1
-                            self.blink_timestamps.append(now)
-                            self.last_blink_time = now
-                    self.closed_frames_count = 0
+                self.last_eyes_seen = eyes_seen
 
                 # -------------------------------------------------------------
                 # C. Micro-Expressions (AU4 Brow Furrow & AU12 Lip Tension)
