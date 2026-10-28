@@ -56,14 +56,29 @@ class RealtimeSpeechAnalyzer {
         if (!SpeechRecognitionClass) {
             console.warn("Web Speech API not supported in this browser. Running fallback linguistic simulator.");
             this.updateStatus("BROWSER STT UNSUPPORTED", "amber");
+        }
+
+        this.bindEvents();
+    }
+
+    startQuestionRecognition() {
+        const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognitionClass) {
+            this.handleMicError("Web Speech API not supported in this browser. Please type question directly.");
             return;
         }
+
+        try {
+            if (this.recognition) {
+                this.recognition.abort();
+            }
+        } catch(e) {}
 
         try {
             this.recognition = new SpeechRecognitionClass();
             this.recognition.continuous = true;
             this.recognition.interimResults = true;
-            this.recognition.lang = this.currentLang;
+            this.recognition.lang = this.currentLang || 'en-IN';
 
             this.recognition.onstart = () => {
                 this.isListening = true;
@@ -77,40 +92,50 @@ class RealtimeSpeechAnalyzer {
             this.recognition.onerror = (event) => {
                 console.warn("Speech recognition error:", event.error);
                 if (event.error === 'not-allowed') {
-                    this.updateStatus("MIC PERMISSION DENIED", "red");
+                    this.handleMicError("Microphone permission denied! Click 'Allow' on browser mic prompt, or type question below.");
+                } else if (event.error === 'network') {
+                    this.handleMicError("Speech recognition network error. You can type question below directly.");
+                } else if (event.error === 'no-speech') {
+                    // Normal pause
                 }
             };
 
             this.recognition.onend = () => {
-                // Auto-restart continuous listening unless stopped
-                if (this.isListening) {
-                    try {
-                        this.recognition.start();
-                    } catch (e) {}
+                if (this.isQuestionMode) {
+                    try { this.recognition.start(); } catch (e) {}
                 }
             };
 
-            this.bindEvents();
-            this.startListening();
+            this.recognition.start();
         } catch (e) {
             console.error("Speech initialization error:", e);
+            this.handleMicError("Microphone error: " + e.message);
+        }
+    }
+
+    handleMicError(msg) {
+        const qSubtext = document.getElementById('question-meta-subtext');
+        const customQInput = document.getElementById('custom-question-input');
+        const statusBadge = document.getElementById('mic-status-badge');
+        if (qSubtext) qSubtext.innerText = msg;
+        if (statusBadge) {
+            statusBadge.innerText = "MIC PERMISSION NEEDED";
+            statusBadge.className = "mic-badge-recording";
+        }
+        if (customQInput) {
+            customQInput.focus();
+            customQInput.placeholder = "Type question here & press Enter...";
         }
     }
 
     startListening() {
-        if (!this.recognition) return;
-        try {
-            this.isListening = true;
-            this.recognition.start();
-        } catch (e) {
-            // Already started or busy
-        }
+        this.startQuestionRecognition();
     }
 
     stopListening() {
         this.isListening = false;
         if (this.recognition) {
-            this.recognition.stop();
+            try { this.recognition.stop(); } catch(e) {}
         }
     }
 
@@ -145,15 +170,25 @@ class RealtimeSpeechAnalyzer {
                 }
             });
         }
+
+        // Quick Preset Question Buttons
+        document.querySelectorAll('.preset-q-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const qText = e.currentTarget.getAttribute('data-q');
+                if (qText) this.setDirectQuestion(qText);
+            });
+        });
     }
 
-    toggleQuestionMode() {
+    async toggleQuestionMode() {
         this.isQuestionMode = !this.isQuestionMode;
         const askMicBtn = document.getElementById('ask-question-mic-btn');
         const mainLabel = document.getElementById('mic-btn-main-label');
         const subLabel = document.getElementById('mic-btn-sub-label');
         const statusBadge = document.getElementById('mic-status-badge');
         const qSubtext = document.getElementById('question-meta-subtext');
+        const qDisplay = document.getElementById('question-text');
+        const customQInput = document.getElementById('custom-question-input');
 
         if (this.isQuestionMode) {
             if (askMicBtn) askMicBtn.classList.add('mic-recording-active');
@@ -163,8 +198,21 @@ class RealtimeSpeechAnalyzer {
                 statusBadge.innerText = "INTERROGATOR SPEAKING";
                 statusBadge.className = "mic-badge-recording";
             }
-            if (qSubtext) qSubtext.innerText = "Awaaz capture ho rahi hai...";
-            this.ensureListening();
+            if (qSubtext) qSubtext.innerText = "Awaaz sun rahe hain... apna sawaal bolein!";
+            if (qDisplay) qDisplay.innerText = '"Listening... speak your question aloud now..."';
+            if (customQInput) customQInput.value = "";
+            this.currentQuestionText = "";
+
+            // Request browser mic permission explicitly
+            try {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
+            } catch(permErr) {
+                console.warn("User media request error:", permErr);
+            }
+
+            this.startQuestionRecognition();
         } else {
             if (askMicBtn) askMicBtn.classList.remove('mic-recording-active');
             if (mainLabel) mainLabel.innerText = "ASK QUESTION (MIC)";
@@ -173,7 +221,21 @@ class RealtimeSpeechAnalyzer {
                 statusBadge.innerText = "QUESTION LOCKED";
                 statusBadge.className = "mic-badge-locked";
             }
+
+            if (!this.currentQuestionText || this.currentQuestionText.trim().length === 0) {
+                if (customQInput && customQInput.value.trim().length > 0) {
+                    this.currentQuestionText = customQInput.value.trim();
+                } else {
+                    this.currentQuestionText = "Are you speaking the 100% truth before this board?";
+                }
+            }
+
+            if (qDisplay) qDisplay.innerText = `"${this.currentQuestionText}"`;
+            if (customQInput) customQInput.value = this.currentQuestionText;
             if (qSubtext) qSubtext.innerText = "Sawaal set! Examining subject ocular dynamics...";
+
+            // Stop recognition cleanly
+            this.stopListening();
 
             // Auto-trigger interrogation examination immediately!
             if (window.lieEngine && this.currentQuestionText) {
