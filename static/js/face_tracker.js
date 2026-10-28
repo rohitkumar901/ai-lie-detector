@@ -32,6 +32,7 @@ class BiometricFaceTracker {
         this.baselineBPM = 72.0;
         this.deltaBPM = 0.0;
 
+        this.isPolling = false;
         this.init();
     }
 
@@ -39,11 +40,13 @@ class BiometricFaceTracker {
         console.log("Biometric Face Tracker initialized with rPPG & FACS Engine...");
         this.bindEvents();
         
-        // Poll live biometrics from backend every 100ms
-        setInterval(() => this.pollLiveBiometrics(), 100);
+        // High-Speed Real-Time Telemetry Polling (40ms / ~25 FPS)
+        setInterval(() => this.pollLiveBiometrics(), 40);
     }
 
     async pollLiveBiometrics() {
+        if (this.isPolling) return;
+        this.isPolling = true;
         try {
             const res = await fetch('/api/biometrics');
             const data = await res.json();
@@ -72,6 +75,8 @@ class BiometricFaceTracker {
             this.updateUi();
         } catch (e) {
             // Silently continue
+        } finally {
+            this.isPolling = false;
         }
     }
 

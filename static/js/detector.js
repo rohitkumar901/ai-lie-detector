@@ -173,10 +173,10 @@ class LieDetectorEngine {
         this.updateLiveBlinkUI(this.examBlinksDetected);
         fetch('/api/register_blink', { method: 'POST' }).catch(() => {});
 
-        // If scanning and reached 4+ blinks, trigger LIE verdict!
-        if (this.isScanning && this.examBlinksDetected >= 4) {
+        // If scanning and reached 3+ blinks, trigger LIE verdict!
+        if (this.isScanning && this.examBlinksDetected >= 3) {
             clearInterval(this.scanInterval);
-            setTimeout(() => this.completeInterrogationScan(), 300);
+            setTimeout(() => this.completeInterrogationScan(), 250);
         }
     }
 
@@ -264,9 +264,9 @@ class LieDetectorEngine {
                 this.interrogationSamples.voiceStressSamples.push(ab.pitchJitter);
             }
 
-            // INSTANT BREAKOUT ON 4 BLINKS:
-            // "agar meri eyes blink higi 4 time jada to false bolega"
-            if (this.examBlinksDetected >= 4) {
+            // INSTANT BREAKOUT ON 3 BLINKS:
+            // "eyes agar 3 bar blink huye to false kro"
+            if (this.examBlinksDetected >= 3) {
                 clearInterval(this.scanInterval);
                 this.completeInterrogationScan();
                 return;
@@ -286,28 +286,28 @@ class LieDetectorEngine {
         const footerElem = document.getElementById('exam-blink-status-footer');
 
         if (countElem) countElem.innerText = count;
-        if (fillElem) fillElem.style.width = `${Math.min(100, (count / 4) * 100)}%`;
+        if (fillElem) fillElem.style.width = `${Math.min(100, (count / 3) * 100)}%`;
 
-        // Update 4 Golden Gear Slot Indicators
-        for (let i = 1; i <= 4; i++) {
+        // Update 3 Golden Gear Slot Indicators
+        for (let i = 1; i <= 3; i++) {
             const slot = document.getElementById(`blink-slot-${i}`);
             if (slot) {
-                if (i <= 3) {
+                if (i <= 2) {
                     if (count >= i) slot.classList.add('slot-active-gold');
                     else slot.classList.remove('slot-active-gold');
                 } else {
-                    if (count >= 4) slot.classList.add('slot-active-danger');
+                    if (count >= 3) slot.classList.add('slot-active-danger');
                     else slot.classList.remove('slot-active-danger');
                 }
             }
         }
 
         if (footerElem) {
-            if (count >= 4) {
-                footerElem.innerText = `🚨 ${count} BLINKS DETECTED! EXCEEDED 4-BLINK LIMIT (FALSE / LIE TRIGGERED)`;
+            if (count >= 3) {
+                footerElem.innerText = `🚨 ${count} BLINKS DETECTED! EXCEEDED 3-BLINK LIMIT (FALSE / LIE TRIGGERED)`;
                 footerElem.className = "blink-status-footer red-alert";
             } else {
-                footerElem.innerText = `STATUS: NORMAL OCULAR FREQUENCY (${count} / 4 BLINKS - TRUTH)`;
+                footerElem.innerText = `STATUS: NORMAL OCULAR FREQUENCY (${count} / 3 BLINKS - TRUTH)`;
                 footerElem.className = "blink-status-footer green-normal";
             }
         }
@@ -371,18 +371,18 @@ class LieDetectorEngine {
             : (customQVal.length > 0 ? customQVal : (this.activeSpokenQuestion || "Did you commit the alleged act?"));
 
         // =====================================================================
-        //   USER DECEPTION RULE:
-        //   "agar meri eyes blink higi 4 time jada to false bolega unless truth"
+        //   USER DECEPTION RULE (3-BLINK THRESHOLD):
+        //   "eyes agar 3 bar blink huye to false kro unless truth"
         // =====================================================================
         const totalBlinks = this.examBlinksDetected;
-        const isLie = (totalBlinks >= 4);
+        const isLie = (totalBlinks >= 3);
         const confidence = isLie 
-            ? Math.min(99, 86 + (totalBlinks - 4) * 4) 
-            : Math.min(98, 88 + (4 - totalBlinks) * 3);
+            ? Math.min(99, 88 + (totalBlinks - 3) * 4) 
+            : Math.min(98, 90 + (3 - totalBlinks) * 4);
 
         const reasoning = isLie
-            ? `Abnormal ocular flutter detected: Subject blinked ${totalBlinks} times during examination, exceeding the 4-blink threshold! Excessive ocular flutter confirms deception.`
-            : `Steady ocular stability verified: Subject blinked only ${totalBlinks} time(s) during examination (strictly within truthful threshold < 4 blinks). Steady gaze confirmed truth.`;
+            ? `Abnormal ocular flutter detected: Subject blinked ${totalBlinks} times during examination, meeting/exceeding the 3-blink threshold! Excessive ocular flutter confirms deception.`
+            : `Steady ocular stability verified: Subject blinked only ${totalBlinks} time(s) during examination (strictly within truthful threshold < 3 blinks). Steady gaze confirmed truth.`;
 
         const voiceVerdict = isLie ? "Sorry sir, you are lying." : "Yes, this is truth.";
 
@@ -509,10 +509,10 @@ class LieDetectorEngine {
                 window.audioBio.speakVerdict(voicePhrase, true);
             }
 
-            // Evidence Breakdown (Includes 4-Blink Evidence Breakdown)
+            // Evidence Breakdown (Includes 3-Blink Evidence Breakdown)
             this.setBreakdownCard('bd-blink-text', 'bd-blink-status',
-                `${data.blinks !== undefined ? data.blinks : 5} Blinks (Limit: 4)`,
-                "4+ BLINK BURST EXCEEDED (LIE DETECTED)", true);
+                `${data.blinks !== undefined ? data.blinks : 3} Blinks (Limit: 3)`,
+                "3+ BLINK BURST EXCEEDED (LIE DETECTED)", true);
 
             const sign = data.deltaBpm >= 0 ? "+" : "";
             this.setBreakdownCard('bd-pulse-text', 'bd-pulse-status',
@@ -545,8 +545,8 @@ class LieDetectorEngine {
 
             // Evidence Breakdown
             this.setBreakdownCard('bd-blink-text', 'bd-blink-status',
-                `${data.blinks !== undefined ? data.blinks : 1} Blinks (Limit: 4)`,
-                "NORMAL OCULAR STABILITY (< 4 BLINKS)", false);
+                `${data.blinks !== undefined ? data.blinks : 1} Blinks (Limit: 3)`,
+                "NORMAL OCULAR STABILITY (< 3 BLINKS)", false);
 
             const sign = data.deltaBpm >= 0 ? "+" : "";
             this.setBreakdownCard('bd-pulse-text', 'bd-pulse-status',
@@ -614,7 +614,7 @@ class LieDetectorEngine {
             });
         }
 
-        // Demo Buttons (User exact 4-blink rule testing)
+        // Demo Buttons (User exact 3-blink rule testing)
         const demoLieBtn = document.getElementById('demo-lie-btn');
         if (demoLieBtn) {
             demoLieBtn.addEventListener('click', () => {
@@ -622,14 +622,14 @@ class LieDetectorEngine {
                 this.showVerdictModal({
                     isLie: true,
                     spokenText: "I did not touch anything, I swear...",
-                    markers: [{ msg: "Ocular Flutter: 5 Blinks (exceeded 4-blink limit)" }],
+                    markers: [{ msg: "Ocular Flutter: 3 Blinks (met 3-blink limit)" }],
                     heartRate: 88.5,
                     deltaBpm: 16.5,
                     eyeContact: 42,
                     browTension: true,
-                    blinks: 5,
-                    deceptionScore: 92,
-                    reasoning: "Abnormal ocular flutter detected: Subject blinked 5 times during interrogation (exceeded 4-blink limit)! Deception triggered.",
+                    blinks: 3,
+                    deceptionScore: 94,
+                    reasoning: "Abnormal ocular flutter detected: Subject blinked 3 times during interrogation (met 3-blink limit)! Deception triggered.",
                     engine: "3D Golden Ocular Engine",
                     voiceVerdict: "Sorry sir, you are lying."
                 });
@@ -648,9 +648,9 @@ class LieDetectorEngine {
                     deltaBpm: -1.0,
                     eyeContact: 96,
                     browTension: false,
-                    blinks: 2,
-                    deceptionScore: 14,
-                    reasoning: "Steady ocular stability verified: Subject blinked only 2 times during interrogation (within calm truth threshold < 4 blinks).",
+                    blinks: 1,
+                    deceptionScore: 12,
+                    reasoning: "Steady ocular stability verified: Subject blinked only 1 time during interrogation (within calm truth threshold < 3 blinks).",
                     engine: "3D Golden Ocular Engine",
                     voiceVerdict: "Yes, this is truth."
                 });

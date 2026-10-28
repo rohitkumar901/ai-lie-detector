@@ -292,20 +292,20 @@
                         </div>
                     </div>
 
-                    <!-- 3D Mechanical 4-Blink Deception Overdrive Gauge (USER'S EXACT RULE) -->
+                    <!-- 3D Mechanical 3-Blink Deception Overdrive Gauge (USER'S EXACT RULE) -->
                     <div class="gold-blink-overdrive-card">
                         <div class="blink-gauge-header">
                             <div class="bgh-left">
                                 <span class="gear-badge">⚙️ OCULAR BLINK DECEPTION GAUGE</span>
-                                <span class="rule-tag">RULE: &ge; 4 BLINKS = FALSE / LIE | &lt; 4 BLINKS = TRUTH</span>
+                                <span class="rule-tag">RULE: &ge; 3 BLINKS = FALSE / LIE | &lt; 3 BLINKS = TRUTH</span>
                             </div>
                             <div class="bgh-right">
-                                <span class="blink-digital-readout">EXAM BLINKS: <strong id="exam-live-blinks">0</strong> / 4 MAX</span>
+                                <span class="blink-digital-readout">EXAM BLINKS: <strong id="exam-live-blinks">0</strong> / 3 MAX</span>
                             </div>
                         </div>
 
-                        <!-- 4 Golden Gear Slot Indicators -->
-                        <div class="blink-slots-grid">
+                        <!-- 3 Golden Gear Slot Indicators -->
+                        <div class="blink-slots-grid" style="grid-template-columns: repeat(3, 1fr);">
                             <div class="blink-slot" id="blink-slot-1">
                                 <span class="slot-num">1</span>
                                 <span class="slot-gear">⚙️</span>
@@ -314,15 +314,10 @@
                             <div class="blink-slot" id="blink-slot-2">
                                 <span class="slot-num">2</span>
                                 <span class="slot-gear">⚙️</span>
-                                <span class="slot-label">NORMAL</span>
-                            </div>
-                            <div class="blink-slot" id="blink-slot-3">
-                                <span class="slot-num">3</span>
-                                <span class="slot-gear">⚙️</span>
                                 <span class="slot-label">ELEVATED</span>
                             </div>
-                            <div class="blink-slot danger-slot" id="blink-slot-4">
-                                <span class="slot-num">4+</span>
+                            <div class="blink-slot danger-slot" id="blink-slot-3">
+                                <span class="slot-num">3+</span>
                                 <span class="slot-gear">🚨</span>
                                 <span class="slot-label">LIE OVERDRIVE</span>
                             </div>
@@ -336,7 +331,7 @@
                         <!-- Manual Blink Button & Shortcuts -->
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px;">
                             <div class="blink-status-footer" id="exam-blink-status-footer" style="margin-top:0; flex:1;">
-                                STATUS: NORMAL OCULAR FREQUENCY (&lt; 4 BLINKS)
+                                STATUS: NORMAL OCULAR FREQUENCY (&lt; 3 BLINKS)
                             </div>
                             <button id="manual-blink-tap-btn" class="gold-sub-btn" style="padding: 6px 12px; font-weight: bold; background: linear-gradient(135deg, #ffd700, #b8860b); color: #000; border-radius: 4px; cursor: pointer; white-space:nowrap;" title="Press Spacebar or 'B' key or click here">
                                 👁️ TAP BLINK (+1)
@@ -351,7 +346,7 @@
                             <span class="lever-gear left spin-slow">⚙️</span>
                             <span class="lever-content">
                                 <strong id="lever-main-text">ENGAGE BLINK &amp; BIOMETRIC SCAN</strong>
-                                <small>AUTOMATIC ON QUESTION | TAP BLINK OR PRESS SPACEBAR (&ge;4 BLINKS = LIE)</small>
+                                <small>AUTOMATIC ON QUESTION | TAP BLINK OR PRESS SPACEBAR (&ge;3 BLINKS = LIE)</small>
                             </span>
                             <span class="lever-gear right spin-rev-slow">⚙️</span>
                         </button>
@@ -360,7 +355,7 @@
                     <!-- Instant Test Demos for quick verification -->
                     <div class="demo-buttons-row" style="display:flex; gap:10px; margin-top:10px;">
                         <button id="demo-lie-btn" class="demo-btn red-btn" style="flex:1; padding:8px 10px; font-weight:bold; cursor:pointer;">
-                            🚨 TEST: 5 BLINKS &rarr; "Sorry sir, you are lying"
+                            🚨 TEST: 3 BLINKS &rarr; "Sorry sir, you are lying"
                         </button>
                         <button id="demo-truth-btn" class="demo-btn green-btn" style="flex:1; padding:8px 10px; font-weight:bold; cursor:pointer;">
                             ✅ TEST: 1 BLINK &rarr; "Yes, this is truth"

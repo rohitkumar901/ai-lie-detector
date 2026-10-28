@@ -236,8 +236,8 @@ Respond ONLY in strict, valid JSON format:
         voice_stress = biometrics.get('voice_stress', 15)
         exam_blinks = biometrics.get('exam_blinks', biometrics.get('blink_count', 0))
 
-        if exam_blinks >= 4:
-            markers.append(f"Abnormal Ocular Flutter / Rapid Blink Burst ({exam_blinks} blinks >= 4 threshold)")
+        if exam_blinks >= 3:
+            markers.append(f"Abnormal Ocular Flutter / Rapid Blink Burst ({exam_blinks} blinks >= 3 threshold)")
         if delta_bpm > 11.0:
             markers.append(f"Cardiovascular Tachycardia Spike (+{delta_bpm} BPM above baseline)")
         if contact < 50:
@@ -248,11 +248,11 @@ Respond ONLY in strict, valid JSON format:
             markers.append(f"High Vocal Frequency Micro-Tremor ({voice_stress}%)")
 
         # --- DECISION SYNTHESIS ---
-        # User Rule: If blinks >= 4 times -> FALSE / LIE, unless -> TRUTH
-        if exam_blinks >= 4:
+        # User Rule: If blinks >= 3 times -> FALSE / LIE, unless -> TRUTH
+        if exam_blinks >= 3:
             is_lie = True
-            confidence = 94
-            reasoning = f"Abnormal ocular flutter detected: Subject blinked {exam_blinks} times during examination, exceeding the 4-blink threshold! Excessive ocular flutter confirms deception."
+            confidence = 95
+            reasoning = f"Abnormal ocular flutter detected: Subject blinked {exam_blinks} times during examination, meeting/exceeding the 3-blink threshold! Excessive ocular flutter confirms deception."
         elif emphatic_detected or evasion_detected:
             is_lie = True
             confidence = 88
@@ -272,7 +272,7 @@ Respond ONLY in strict, valid JSON format:
         else:
             is_lie = False
             confidence = 92
-            reasoning = f"Steady ocular stability verified: Subject blinked only {exam_blinks} time(s) (within calm truthful threshold < 4 blinks). Steady gaze confirmed truth."
+            reasoning = f"Steady ocular stability verified: Subject blinked only {exam_blinks} time(s) (within calm truthful threshold < 3 blinks). Steady gaze confirmed truth."
 
         return {
             "verdict": "LIE" if is_lie else "TRUTH",

@@ -76,6 +76,9 @@ class ScientificPolygraphEngine:
         self.blink_timestamps = collections.deque(maxlen=60)
         self.last_eyes_seen = True
         self.blink_rate_bpm = 12
+        self.closed_frames_count = 0
+        self.last_blink_time = 0.0
+        self.baseline_eye_variance = None
 
         # ---------------------------------------------------------------------
         # 4. Facial Action Units (Micro-Expressions)
@@ -172,32 +175,59 @@ class ScientificPolygraphEngine:
                             self.compute_rppg_heart_rate()
 
                 # -------------------------------------------------------------
-                # B. Eye Contact & Gaze Analysis
+                # B. High-Speed Eye Openness & Real-Time Blink Tracking
                 # -------------------------------------------------------------
-                eye_region_h = int(fh * 0.55)
-                roi_gray = gray[fy:fy + eye_region_h, fx:fx + fw]
-                eyes = self.eye_cascade.detectMultiScale(
-                    roi_gray, scaleFactor=1.08, minNeighbors=2, minSize=(14, 14)
-                )
+                eye_band_y1 = fy + int(fh * 0.18)
+                eye_band_y2 = fy + int(fh * 0.50)
+                eye_band_x1 = fx + int(fw * 0.12)
+                eye_band_x2 = fx + int(fw * 0.88)
 
+                eye_band = gray[eye_band_y1:eye_band_y2, eye_band_x1:eye_band_x2]
+                
+                # Fast Haar detection on targeted eye band
+                eyes = self.eye_cascade.detectMultiScale(
+                    eye_band, scaleFactor=1.05, minNeighbors=1, minSize=(12, 12)
+                )
                 self.eyes_detected_count = len(eyes)
 
-                if self.eyes_detected_count >= 2:
+                # High-speed vertical edge variance (pupil/eyelid contrast)
+                if eye_band.size > 0:
+                    sobel_y = cv2.Sobel(eye_band, cv2.CV_32F, 0, 1, ksize=3)
+                    eye_variance = float(np.std(sobel_y))
+                    
+                    if self.baseline_eye_variance is None:
+                        self.baseline_eye_variance = max(8.0, eye_variance)
+                    else:
+                        self.baseline_eye_variance = self.baseline_eye_variance * 0.96 + eye_variance * 0.04
+                    
+                    openness_ratio = eye_variance / max(1.0, self.baseline_eye_variance)
+                else:
+                    openness_ratio = 1.0
+
+                # Eye contact score
+                if self.eyes_detected_count >= 2 or openness_ratio > 0.85:
                     self.eye_contact_active = True
                     self.eye_contact_history.append(1.0)
-                elif self.eyes_detected_count == 1:
+                elif self.eyes_detected_count == 1 or openness_ratio > 0.65:
                     self.eye_contact_active = True
                     self.eye_contact_history.append(0.7)
                 else:
                     self.eye_contact_active = False
                     self.eye_contact_history.append(0.0)
 
-                # Blink detection transition
-                eyes_currently_seen = (self.eyes_detected_count > 0)
-                if self.last_eyes_seen and not eyes_currently_seen:
-                    self.blink_count += 1
-                    self.blink_timestamps.append(now)
-                self.last_eyes_seen = eyes_currently_seen
+                # Instant Blink Detection (Both Haar and Edge Contrast triggers)
+                is_closed = (self.eyes_detected_count == 0 and openness_ratio < 0.76) or (openness_ratio < 0.55)
+
+                if is_closed:
+                    self.closed_frames_count += 1
+                else:
+                    # Typical blink is 1 to 10 frames (~30ms to 330ms)
+                    if 1 <= self.closed_frames_count <= 10:
+                        if (now - self.last_blink_time) >= 0.10:
+                            self.blink_count += 1
+                            self.blink_timestamps.append(now)
+                            self.last_blink_time = now
+                    self.closed_frames_count = 0
 
                 # -------------------------------------------------------------
                 # C. Micro-Expressions (AU4 Brow Furrow & AU12 Lip Tension)
