@@ -173,7 +173,12 @@ class RealtimeSpeechAnalyzer {
                 statusBadge.innerText = "QUESTION LOCKED";
                 statusBadge.className = "mic-badge-locked";
             }
-            if (qSubtext) qSubtext.innerText = "Sawaal set ho chuka hai! Ab examine karein.";
+            if (qSubtext) qSubtext.innerText = "Sawaal set! Examining subject ocular dynamics...";
+
+            // Auto-trigger interrogation examination immediately!
+            if (window.lieEngine && this.currentQuestionText) {
+                window.lieEngine.triggerAutoExamination(this.currentQuestionText);
+            }
         }
     }
 
@@ -183,9 +188,10 @@ class RealtimeSpeechAnalyzer {
         const qDisplay = document.getElementById('question-text');
         const qSubtext = document.getElementById('question-meta-subtext');
         if (qDisplay) qDisplay.innerText = `"${this.currentQuestionText}"`;
-        if (qSubtext) qSubtext.innerText = "Manual question set. Ready for ocular scan!";
+        if (qSubtext) qSubtext.innerText = "Sawaal set! Examining subject ocular dynamics...";
         if (window.lieEngine) {
             window.lieEngine.activeSpokenQuestion = this.currentQuestionText;
+            window.lieEngine.triggerAutoExamination(this.currentQuestionText);
         }
     }
 

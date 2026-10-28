@@ -177,7 +177,7 @@ class ScientificPolygraphEngine:
                 eye_region_h = int(fh * 0.55)
                 roi_gray = gray[fy:fy + eye_region_h, fx:fx + fw]
                 eyes = self.eye_cascade.detectMultiScale(
-                    roi_gray, scaleFactor=1.12, minNeighbors=3, minSize=(18, 18)
+                    roi_gray, scaleFactor=1.08, minNeighbors=2, minSize=(14, 14)
                 )
 
                 self.eyes_detected_count = len(eyes)
@@ -499,6 +499,12 @@ def video_feed():
 @app.route("/api/biometrics")
 def get_biometrics():
     return jsonify(polygraph_engine.get_biometric_telemetry())
+
+@app.route("/api/register_blink", methods=["POST"])
+def register_blink():
+    polygraph_engine.blink_count += 1
+    polygraph_engine.blink_timestamps.append(time.time())
+    return jsonify({"status": "success", "blink_count": polygraph_engine.blink_count})
 
 @app.route("/api/start_calibration", methods=["POST"])
 def start_calibration():

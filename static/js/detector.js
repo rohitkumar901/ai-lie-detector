@@ -142,12 +142,52 @@ class LieDetectorEngine {
     }
 
     // =========================================================================
-    //   5-SECOND INTERROGATION SCAN PROCEDURE (TRACKS 4-BLINK DECEPTION RULE)
+    //   AUTOMATIC QUESTION -> EXAMINATION TRIGGER & BLINK CONTROLLER
+    // =========================================================================
+
+    triggerAutoExamination(question) {
+        if (!question) question = "Are you speaking the absolute truth?";
+        this.activeSpokenQuestion = question;
+        const qElem = document.getElementById('question-text');
+        if (qElem) qElem.innerText = `"${question}"`;
+
+        const qSubtext = document.getElementById('question-meta-subtext');
+        if (qSubtext) qSubtext.innerText = "Interrogating subject... Monitoring ocular frequency and biometrics.";
+
+        if (window.audioBio) window.audioBio.ensureAudioContext();
+
+        if (this.isScanning) {
+            clearInterval(this.scanInterval);
+            this.isScanning = false;
+        }
+
+        // Start interrogation scan automatically
+        setTimeout(() => this.startInterrogationScan(), 250);
+    }
+
+    recordManualBlink() {
+        if (window.faceTracker) {
+            window.faceTracker.blinkCount = (window.faceTracker.blinkCount || 0) + 1;
+        }
+        this.examBlinksDetected = (this.examBlinksDetected || 0) + 1;
+        this.updateLiveBlinkUI(this.examBlinksDetected);
+        fetch('/api/register_blink', { method: 'POST' }).catch(() => {});
+
+        // If scanning and reached 4+ blinks, trigger LIE verdict!
+        if (this.isScanning && this.examBlinksDetected >= 4) {
+            clearInterval(this.scanInterval);
+            setTimeout(() => this.completeInterrogationScan(), 300);
+        }
+    }
+
+    // =========================================================================
+    //   4-SECOND INTERROGATION SCAN PROCEDURE (TRACKS 4-BLINK DECEPTION RULE)
     // =========================================================================
 
     startInterrogationScan() {
         if (this.isScanning) return;
         this.isScanning = true;
+        this.scanDuration = 4.0;
 
         if (window.speechAnalyzer) {
             window.speechAnalyzer.resetTranscript();
@@ -199,7 +239,10 @@ class LieDetectorEngine {
             // Live Blink Detection during Answer Period
             if (ft) {
                 const curBlinks = ft.blinkCount || 0;
-                this.examBlinksDetected = Math.max(0, curBlinks - this.examStartBlinkCount);
+                const detected = Math.max(0, curBlinks - this.examStartBlinkCount);
+                if (detected > this.examBlinksDetected) {
+                    this.examBlinksDetected = detected;
+                }
                 this.updateLiveBlinkUI(this.examBlinksDetected);
             }
 
@@ -221,7 +264,15 @@ class LieDetectorEngine {
                 this.interrogationSamples.voiceStressSamples.push(ab.pitchJitter);
             }
 
-            // Complete scan after 5 seconds
+            // INSTANT BREAKOUT ON 4 BLINKS:
+            // "agar meri eyes blink higi 4 time jada to false bolega"
+            if (this.examBlinksDetected >= 4) {
+                clearInterval(this.scanInterval);
+                this.completeInterrogationScan();
+                return;
+            }
+
+            // Complete scan after duration
             if (elapsedMs >= durationMs) {
                 clearInterval(this.scanInterval);
                 this.completeInterrogationScan();
@@ -446,7 +497,7 @@ class LieDetectorEngine {
         if (data.isLie) {
             // LIE DETECTED (झूठ पकड़ा गया!) - "Sorry sir, you are lying"
             modal.className = "verdict-modal lie-verdict";
-            if (giantText) giantText.innerText = "LIE DETECTED!";
+            if (giantText) giantText.innerText = "SORRY SIR, YOU ARE LYING!";
             if (voicePhraseElem) voicePhraseElem.innerText = `"${voicePhrase}"`;
             if (speechSubtextElem) speechSubtextElem.className = "verdict-speech-subtext red-text";
             if (confBadge) confBadge.innerText = `DECEPTION PROBABILITY: ${data.deceptionScore}%`;
@@ -479,7 +530,7 @@ class LieDetectorEngine {
         } else {
             // TRUTH VERIFIED (सच सत्यापित!) - "Yes, this is truth"
             modal.className = "verdict-modal truth-verdict";
-            if (giantText) giantText.innerText = "TRUTH VERIFIED!";
+            if (giantText) giantText.innerText = "YES, THIS IS TRUTH!";
             if (voicePhraseElem) voicePhraseElem.innerText = `"${voicePhrase}"`;
             if (speechSubtextElem) speechSubtextElem.className = "verdict-speech-subtext green-text";
             const credibility = Math.min(99, Math.max(82, 100 - (data.deceptionScore < 50 ? data.deceptionScore : 15)));
@@ -605,12 +656,25 @@ class LieDetectorEngine {
                 });
             });
         }
-                    reasoning: "Direct unhedged verbal affirmation with unbroken camera gaze (96%) and calm resting heart rate within baseline bounds.",
-                    engine: "Cognitive AI Interrogator",
-                    voiceVerdict: "Yes, this is truth."
-                });
+
+        // Manual Blink Tap Button & Keyboard Triggers
+        const manualBlinkBtn = document.getElementById('manual-blink-tap-btn');
+        if (manualBlinkBtn) {
+            manualBlinkBtn.addEventListener('click', () => {
+                this.recordManualBlink();
             });
         }
+
+        window.addEventListener('keydown', (e) => {
+            // Ignore when typing inside an input element
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+                return;
+            }
+            if (e.code === 'Space' || e.key === 'b' || e.key === 'B') {
+                e.preventDefault();
+                this.recordManualBlink();
+            }
+        });
 
         // AI Brain Configuration Modal
         const brainBtn = document.getElementById('ai-brain-btn');

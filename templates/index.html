@@ -287,7 +287,7 @@
 
                             <div class="quick-type-box">
                                 <input id="custom-question-input" type="text" placeholder="Or type your question here directly..." class="gold-text-input">
-                                <button id="set-question-btn" class="gold-sub-btn">APPLY</button>
+                                <button id="set-question-btn" class="gold-sub-btn">⚡ ASK &amp; SCAN</button>
                             </div>
                         </div>
                     </div>
@@ -332,8 +332,15 @@
                         <div class="blink-progress-track">
                             <div id="blink-progress-fill" class="blink-progress-fill" style="width: 0%;"></div>
                         </div>
-                        <div class="blink-status-footer" id="exam-blink-status-footer">
-                            STATUS: STEADY / WITHIN TRUTH BOUNDS (&lt; 4 BLINKS)
+
+                        <!-- Manual Blink Button & Shortcuts -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px;">
+                            <div class="blink-status-footer" id="exam-blink-status-footer" style="margin-top:0; flex:1;">
+                                STATUS: NORMAL OCULAR FREQUENCY (&lt; 4 BLINKS)
+                            </div>
+                            <button id="manual-blink-tap-btn" class="gold-sub-btn" style="padding: 6px 12px; font-weight: bold; background: linear-gradient(135deg, #ffd700, #b8860b); color: #000; border-radius: 4px; cursor: pointer; white-space:nowrap;" title="Press Spacebar or 'B' key or click here">
+                                👁️ TAP BLINK (+1)
+                            </button>
                         </div>
                     </div>
 
@@ -343,18 +350,21 @@
                             <span class="lever-shine"></span>
                             <span class="lever-gear left spin-slow">⚙️</span>
                             <span class="lever-content">
-                                <strong id="lever-main-text">ENGAGE 5-SECOND BLINK &amp; BIOMETRIC SCAN</strong>
-                                <small>CLICK OR PRESS SPACEBAR (4 BLINKS = FALSE / LIE)</small>
+                                <strong id="lever-main-text">ENGAGE BLINK &amp; BIOMETRIC SCAN</strong>
+                                <small>AUTOMATIC ON QUESTION | TAP BLINK OR PRESS SPACEBAR (&ge;4 BLINKS = LIE)</small>
                             </span>
                             <span class="lever-gear right spin-rev-slow">⚙️</span>
                         </button>
                     </div>
 
                     <!-- Instant Test Demos for quick verification -->
-                    <div class="demo-buttons-row">
-                        <span class="demo-label">TEST DEMO:</span>
-                        <button id="demo-lie-btn" class="demo-btn red-btn">DEMO: 5 BLINKS (LIE)</button>
-                        <button id="demo-truth-btn" class="demo-btn green-btn">DEMO: 2 BLINKS (TRUTH)</button>
+                    <div class="demo-buttons-row" style="display:flex; gap:10px; margin-top:10px;">
+                        <button id="demo-lie-btn" class="demo-btn red-btn" style="flex:1; padding:8px 10px; font-weight:bold; cursor:pointer;">
+                            🚨 TEST: 5 BLINKS &rarr; "Sorry sir, you are lying"
+                        </button>
+                        <button id="demo-truth-btn" class="demo-btn green-btn" style="flex:1; padding:8px 10px; font-weight:bold; cursor:pointer;">
+                            ✅ TEST: 1 BLINK &rarr; "Yes, this is truth"
+                        </button>
                     </div>
 
                     <!-- Countdown Bar during Interrogation Scan -->

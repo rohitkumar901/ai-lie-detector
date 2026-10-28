@@ -368,33 +368,67 @@ class AudioBiometrics {
 
     // Voice Announcement (Text-to-Speech Interrogator Voice)
     speakVerdict(text, isLie = false) {
-        if (!('speechSynthesis' in window)) return;
+        console.log(`[AudioBiometrics] speakVerdict invoked: "${text}", isLie=${isLie}`);
+        if (!('speechSynthesis' in window)) {
+            console.warn("speechSynthesis not available in this browser");
+            return;
+        }
+
         try {
+            // Chrome audio unlock
+            if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                this.audioCtx.resume();
+            }
+
+            // Always resume speech synthesis in Chromium
+            window.speechSynthesis.resume();
             window.speechSynthesis.cancel();
+
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US';
             if (isLie) {
                 utterance.pitch = 0.88; // Authoritative, serious interrogator voice
-                utterance.rate = 0.92;
+                utterance.rate = 0.90;
+                utterance.volume = 1.0;
             } else {
-                utterance.pitch = 1.05; // Clear, affirmative voice
-                utterance.rate = 0.96;
+                utterance.pitch = 1.02; // Clear, affirmative voice
+                utterance.rate = 0.95;
+                utterance.volume = 1.0;
             }
 
-            const voices = window.speechSynthesis.getVoices();
-            const preferred = voices.find(v => v.lang.startsWith('en') && (
-                v.name.includes('Natural') || v.name.includes('Google') || 
-                v.name.includes('David') || v.name.includes('Zira') || 
-                v.name.includes('Samantha')
-            ));
-            if (preferred) {
-                utterance.voice = preferred;
+            const selectVoice = () => {
+                const voices = window.speechSynthesis.getVoices();
+                if (voices && voices.length > 0) {
+                    const preferred = voices.find(v => v.lang.startsWith('en') && (
+                        v.name.includes('Natural') || v.name.includes('Google') || 
+                        v.name.includes('David') || v.name.includes('Zira') || 
+                        v.name.includes('Samantha') || v.name.includes('Mark') ||
+                        v.name.includes('English')
+                    ));
+                    if (preferred) utterance.voice = preferred;
+                }
+            };
+
+            selectVoice();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = selectVoice;
             }
 
-            // Speak right with sound effect
+            utterance.onstart = () => console.log(`[AudioBiometrics] Voice announcement started: "${text}"`);
+            utterance.onend = () => console.log(`[AudioBiometrics] Voice announcement completed`);
+            utterance.onerror = (e) => console.warn(`[AudioBiometrics] Voice announcement error:`, e);
+
+            // Prevent Chromium Garbage Collection bug
+            window._currentUtterance = utterance;
+
             setTimeout(() => {
-                window.speechSynthesis.speak(utterance);
-            }, 250);
+                try {
+                    window.speechSynthesis.resume();
+                    window.speechSynthesis.speak(utterance);
+                } catch (err) {
+                    console.error("speechSynthesis.speak error:", err);
+                }
+            }, 100);
         } catch (e) {
             console.warn("Speech synthesis error:", e);
         }
