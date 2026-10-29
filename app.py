@@ -104,22 +104,24 @@ class ScientificPolygraphEngine:
         self.baseline_blink_rate = 12.0
         self.baseline_contact_score = 90.0
 
-        self.open_camera(self.camera_index)
+        # Open camera in background thread so server starts instantly (no freeze)
+        threading.Thread(target=self.open_camera, args=(self.camera_index,), daemon=True).start()
 
     def open_camera(self, index):
         with self.lock:
-            if self.cap and self.cap.isOpened():
-                self.cap.release()
-            self.camera_index = index
-            if os.name == 'nt':
-                self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
-                if not self.cap.isOpened():
-                    self.cap = cv2.VideoCapture(self.camera_index)
-            else:
+            try:
+                if self.cap and self.cap.isOpened():
+                    self.cap.release()
+                self.camera_index = index
                 self.cap = cv2.VideoCapture(self.camera_index)
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-            print(f"[PolygraphEngine] Opened Camera index {self.camera_index}: isOpened={self.cap.isOpened()}")
+                if self.cap and self.cap.isOpened():
+                    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                    print(f"[PolygraphEngine] Camera index {self.camera_index} opened successfully.")
+                else:
+                    print(f"[PolygraphEngine] Camera index {self.camera_index} status: isOpened={self.cap.isOpened() if self.cap else False}")
+            except Exception as e:
+                print(f"[PolygraphEngine] Camera open exception: {e}")
 
     def start_calibration(self):
         """Initiates a 10-second baseline recording of resting biometrics."""
